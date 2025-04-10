@@ -1,4 +1,4 @@
-// main package of Validator
+// main package of Soup
 package u
 
 import (

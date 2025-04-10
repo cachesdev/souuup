@@ -3,7 +3,7 @@ package u_test
 import (
 	"testing"
 
-	u "github.com/cachesdev/souuup"
+	u "github.com/cachesdev/souuup/uuu"
 )
 
 func TestValidate(t *testing.T) {
