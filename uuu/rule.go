@@ -1,7 +1,5 @@
 package u
 
-import "golang.org/x/exp/constraints"
-
 // Rule is a generic validation rule for any type
 type Rule[T any] = func(FieldState[T]) bool
 
@@ -11,9 +9,6 @@ type StringRule = Rule[string]
 // NumericRule is for numeric validation rules
 type NumericRule[T Numeric] = Rule[T]
 
-// UnsignedRule is for unsigned numeric validation rules
-type UnsignedRule[T constraints.Unsigned] = Rule[T]
-
 // MinS validates if a string is shorter than n characters
 func MinS(n int) StringRule {
 	return func(fd FieldState[string]) bool {
@@ -21,15 +16,8 @@ func MinS(n int) StringRule {
 	}
 }
 
-// MinD validates if a numeric value is less than n
-func MinD[T Numeric](n T) NumericRule[T] {
-	return func(fd FieldState[T]) bool {
-		return fd.value < n
-	}
-}
-
-// MinU validates if an unsigned numeric value is less than n
-func MinU[T constraints.Unsigned](n T) UnsignedRule[T] {
+// MinN validates if a numeric value is less than n
+func MinN[T Numeric](n T) NumericRule[T] {
 	return func(fd FieldState[T]) bool {
 		return fd.value < n
 	}

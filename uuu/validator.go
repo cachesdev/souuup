@@ -16,7 +16,7 @@ type Souuup map[FieldTag]Validable
 type Validator = Souuup
 
 type Numeric interface {
-	constraints.Signed | constraints.Float
+	constraints.Float | constraints.Integer
 }
 
 // Valid runs validation on every field, and sets the error map.
