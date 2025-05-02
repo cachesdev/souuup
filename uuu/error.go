@@ -4,23 +4,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
-
-	"github.com/k0kubun/pp/v3"
 )
 
 // RuleError represents a single validation rule failure.
-type RuleError = string
+type RuleError string
+
+// Neded for internal usage in Souup.Validate()
+func (re RuleError) Error() string {
+	return string(re)
+}
 
 // RuleError represents a slice of rule validation failures.
 type RuleErrors = []RuleError
 
-// FieldErrors represents a collection of validation rule failures for a field.
-type FieldErrors = map[string]RuleErrors
+// FieldsErrorMap represents many fields K with their V RuleErrors.
+type FieldsErrorMap = map[string]RuleErrors
+
+// NestedErrorsMap represents the collection of fields under the current one,
+// and each of their validation errors
+type NestedErrorsMap = map[string]*ValidationError
 
 // ValidationError represents the tree of nested validation errors in a field.
 type ValidationError struct {
-	Errors       FieldErrors
-	NestedErrors map[string]*ValidationError
+	Errors       FieldsErrorMap
+	NestedErrors NestedErrorsMap
+	Parent       *ValidationError
 }
 
 // MarshalJSON implements the json.Marshaler interface for ValidationError.
@@ -31,8 +39,6 @@ func (ve *ValidationError) MarshalJSON() ([]byte, error) {
 	if errorMap == nil {
 		return []byte("{}"), nil
 	}
-
-	pp.Println(errorMap)
 
 	return json.Marshal(errorMap)
 }
@@ -87,13 +93,13 @@ func (ve *ValidationError) ToMap() map[string]any {
 // Helper to avoid nil maps
 func NewValidationError() *ValidationError {
 	return &ValidationError{
-		Errors:       make(FieldErrors),
+		Errors:       make(FieldsErrorMap),
 		NestedErrors: make(map[string]*ValidationError),
 	}
 }
 
-func (ve *ValidationError) AddError(field string, err RuleError) {
-	ve.Errors[field] = append(ve.Errors[field], err)
+func (ve *ValidationError) AddError(field string, err error) {
+	ve.Errors[field] = append(ve.Errors[field], RuleError(err.Error()))
 }
 
 // GetOrCreateNested returns a nested ValidationError for a field, creating it if necessary.
