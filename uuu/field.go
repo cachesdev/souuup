@@ -80,7 +80,7 @@ func NestedFn[T any](value T, nestedFn func(T) Souuup) *FieldDef[T] {
 			func(state FieldState[T]) error {
 				nestedValidator := nestedFn(state.value)
 
-				if err := nestedValidator.Validate(); err != nil {
+				if err := nestedValidator.ValidateSouuup(); err != nil {
 					return err
 				}
 
@@ -97,7 +97,7 @@ func Nested(uuu Souuup) *FieldDef[struct{}] {
 		},
 		rules: []Rule[struct{}]{
 			func(state FieldState[struct{}]) error {
-				if err := uuu.Validate(); err != nil {
+				if err := uuu.ValidateSouuup(); err != nil {
 					return err
 				}
 				return nil

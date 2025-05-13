@@ -15,8 +15,8 @@ type souuupState struct {
 	errors *ValidationError
 }
 
-// Validate runs validation on all fields and returns an error if any fail
-func (v Souuup) Validate() error {
+// ValidateSouuup runs validation on all fields and returns an error if any fail
+func (v Souuup) ValidateSouuup() error {
 	errors := NewValidationError()
 	hasErrors := false
 

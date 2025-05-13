@@ -52,7 +52,7 @@ func TestValidate(t *testing.T) {
 		}),
 	}
 
-	if err := v.Validate(); err != nil {
+	if err := v.ValidateSouuup(); err != nil {
 		fmt.Println(err.Error())
 		t.Error("Expected validation to pass")
 	}
@@ -137,7 +137,7 @@ func TestValidateComplex(t *testing.T) {
 		}),
 	}
 
-	if err := v.Validate(); err != nil {
+	if err := v.ValidateSouuup(); err != nil {
 		fmt.Println(err.Error())
 		t.Error("Expected validation to pass")
 	}
@@ -193,7 +193,7 @@ func TestValidationFailure(t *testing.T) {
 		}),
 	}
 
-	err := v.Validate()
+	err := v.ValidateSouuup()
 	if err == nil {
 		t.Fatal("Expected validation to fail, but it passed")
 	}
