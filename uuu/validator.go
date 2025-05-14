@@ -5,61 +5,53 @@ package u
 // an error map
 type FieldTag = string
 
-// a Souuup instance
-type Souuup map[FieldTag]Validable
-
-// a Souuup instance for boring people
-type Validator = Souuup
-
+// Internal State
 type souuupState struct {
 	errors *ValidationError
 }
 
-// ValidateSouuup runs validation on all fields and returns an error if any fail
-func (v Souuup) ValidateSouuup() error {
-	errors := NewValidationError()
-	hasErrors := false
+// Schema of all validable fields/nested fields
+// Schema is itself Validable
+type Schema map[FieldTag]Validable
 
-	for tag, field := range v {
-		field.SetTag(tag)
+var _ Validable = (*Schema)(nil)
 
-		// Run validation on the field
-		if err := field.Validate(); err != nil {
-			hasErrors = true
-			errors.AddError(tag, field.Errors())
-		}
+// A Souup Instance
+type Souuup struct {
+	state  *souuupState
+	schema Schema
+}
+
+func NewSouuup(schema Schema) *Souuup {
+	return &Souuup{
+		state:  &souuupState{NewValidationError()},
+		schema: schema,
 	}
+}
 
-	if hasErrors {
-		return errors
+func (u *Souuup) Validate() error {
+	u.schema.Validate(u.state.errors)
+
+	if u.state.errors.HasErrors() {
+		return u.state.errors
 	}
 	return nil
 }
 
-// VeFromError casts an error to ValidationError if possible
-func VeFromError(err error) (*ValidationError, bool) {
-	if err == nil {
-		return nil, false
-	}
+func (d Schema) Validate(errors *ValidationError) {
+	for tag, field := range d {
+		errors.NestedErrors[tag] = NewValidationError()
+		errors.NestedErrors[tag].Parent = errors
 
-	ve, ok := err.(*ValidationError)
-	return ve, ok
+		field.Validate(errors.NestedErrors[tag])
+	}
 }
 
-func (v Souuup) Errors() *ValidationError {
-	errors := NewValidationError()
-	for tag, field := range v {
-		fieldErrors := field.Errors()
-		if fieldErrors != nil && fieldErrors.HasErrors() {
-			errors.NestedErrors[tag] = fieldErrors
-		}
-	}
-	return errors
+func (d Schema) Errors() *ValidationError {
+	return d.Errors()
 }
 
 type Validable interface {
-	Validate() error
-	Tag() string
-	SetTag(string)
+	Validate(*ValidationError)
 	Errors() *ValidationError
 }

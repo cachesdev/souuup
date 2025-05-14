@@ -1,204 +1,357 @@
 package u_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	u "github.com/cachesdev/souuup/uuu"
 )
 
-func TestValidate(t *testing.T) {
-	type C struct {
-		D int
-	}
+// Define nested types used in tests
+type NestedChild struct {
+	Int int
+}
 
-	type NestedPair struct {
-		A int
-		B string
-		C C
-	}
+type NestedStructure struct {
+	Int    int
+	String string
+	Child  NestedChild
+}
 
-	req := struct {
-		NumF       float64
-		NumUint    uint16
-		Num32      int32
-		Num        int
-		NestedPair NestedPair
-	}{
-		NumF:    3.0,
-		NumUint: 3,
-		Num32:   3,
-		Num:     3,
-		NestedPair: NestedPair{
-			A: 1,
-			B: "A",
-			C: C{
-				D: 1,
+type Primitives struct {
+	Float  float64
+	Uint16 uint16
+	Int32  int32
+	Int    int
+	Nested NestedStructure
+}
+
+type State struct {
+	ID   int
+	Name string
+}
+
+type City struct {
+	ID    int
+	Name  string
+	State State
+}
+
+type District struct {
+	ID   int
+	Name string
+}
+
+type Club struct {
+	ID          int
+	Name        string
+	CityID      int
+	DistrictID  int
+	Image       *string
+	Address     *string
+	MapLocation *string
+	Contact     *string
+	District    District
+	City        City
+}
+
+func TestValidatePrimitives(t *testing.T) {
+	req := Primitives{
+		Float:  12.0,
+		Uint16: 3,
+		Int32:  3,
+		Int:    1,
+		Nested: NestedStructure{
+			Int:    3,
+			String: "ABC",
+			Child: NestedChild{
+				Int: 3,
 			},
 		},
 	}
 
-	v := u.Souuup{
-		"myField":  u.Field(req.NumF, u.MinN(10.0)),
-		"myField2": u.Field(req.NumUint, u.MinN(uint16(3))),
-		"myField3": u.Field(req.Num32, u.MinN(int32(3))),
-		"myField4": u.Field(req.Num, u.MaxN(1)),
-		"nestedField1": u.Nested(u.Souuup{
-			"A": u.Field(req.NestedPair.A, u.MinN(3)),
-			"B": u.Field(req.NestedPair.B, u.MinS(3)),
-			"C": u.Nested(u.Souuup{
-				"D": u.Field(req.NestedPair.C.D, u.MinN(3)),
-			}),
-		}),
+	v := u.NewSouuup(u.Schema{
+		"myField":  u.Field(req.Float, u.MinN(10.0)),
+		"myField2": u.Field(req.Uint16, u.MinN(uint16(3))),
+		"myField3": u.Field(req.Int32, u.MinN(int32(3))),
+		"myField4": u.Field(req.Int, u.MaxN(1)),
+		"nestedField1": u.Schema{
+			"IntValue":    u.Field(req.Nested.Int, u.MinN(3)),
+			"StringValue": u.Field(req.Nested.String, u.MinS(3)),
+			"Child": u.Schema{
+				"Value": u.Field(req.Nested.Child.Int, u.MinN(3)),
+			},
+		},
+	})
+
+	if err := v.Validate(); err != nil {
+		t.Errorf("Expected validation to pass, got error: %v", err)
 	}
-
-	if err := v.ValidateSouuup(); err != nil {
-		fmt.Println(err.Error())
-		t.Error("Expected validation to pass")
-	}
 }
 
-type State struct {
-	ID               int
-	StateDescription string
-}
-
-type City struct {
-	ID              int
-	CityDescription string
-	State           State
-}
-
-type District struct {
-	ID                  int
-	DistrictDescription string
-}
-
-type Club struct {
-	ID              int
-	ClubDescription string
-	CityID          int
-	DistrictID      int
-	Image           *string
-	Address         *string
-	MapLocation     *string
-	Contact         *string
-	District        District
-	City            City
-}
-
-func TestValidateComplex(t *testing.T) {
+func TestValidateComplexStructure(t *testing.T) {
 	imageUrl := "https://example.com/image.jpg"
 	address := "123 Main Street"
 	mapLocation := "40.7128,-74.0060"
 	contact := "John Doe: 555-1234"
 
 	club := Club{
-		ID:              1,
-		ClubDescription: "Sports Club",
-		CityID:          2,
-		DistrictID:      3,
-		Image:           &imageUrl,
-		Address:         &address,
-		MapLocation:     &mapLocation,
-		Contact:         &contact,
+		ID:          1,
+		Name:        "Sports Club",
+		CityID:      2,
+		DistrictID:  3,
+		Image:       &imageUrl,
+		Address:     &address,
+		MapLocation: &mapLocation,
+		Contact:     &contact,
 		District: District{
-			ID:                  3,
-			DistrictDescription: "Downtown",
+			ID:   3,
+			Name: "Downtown",
 		},
 		City: City{
-			ID:              2,
-			CityDescription: "Metropolis",
+			ID:   2,
+			Name: "Metropolis",
 			State: State{
-				ID:               4,
-				StateDescription: "North State",
+				ID:   4,
+				Name: "North State",
 			},
 		},
 	}
 
-	v := u.Souuup{
-		"id":          u.Field(club.ID, u.MinN(1)),
-		"description": u.Field(club.ClubDescription, u.MinS(3)),
-		"cityId":      u.Field(club.CityID, u.MinN(1)),
-		"districtId":  u.Field(club.DistrictID, u.MinN(1)),
-		"image":       u.Field(*club.Image, u.MinS(5)),
-		"address":     u.Field(*club.Address, u.MinS(5)),
-		"district": u.Nested(u.Souuup{
-			"id":          u.Field(club.District.ID, u.MinN(1)),
-			"description": u.Field(club.District.DistrictDescription, u.MinS(3)),
-		}),
-		"city": u.Nested(u.Souuup{
-			"id":          u.Field(club.City.ID, u.MinN(1)),
-			"description": u.Field(club.City.CityDescription, u.MinS(3)),
-			"state": u.Nested(u.Souuup{
-				"id":          u.Field(club.City.State.ID, u.MinN(1)),
-				"description": u.Field(club.City.State.StateDescription, u.MinS(3)),
-			}),
-		}),
-	}
+	v := u.NewSouuup(u.Schema{
+		"id":         u.Field(club.ID, u.MinN(1)),
+		"name":       u.Field(club.Name, u.MinS(3)),
+		"cityId":     u.Field(club.CityID, u.MinN(1)),
+		"districtId": u.Field(club.DistrictID, u.MinN(1)),
+		"image":      u.Field(*club.Image, u.MinS(5)),
+		"address":    u.Field(*club.Address, u.MinS(5)),
+		"district": u.Schema{
+			"id":   u.Field(club.District.ID, u.MinN(1)),
+			"name": u.Field(club.District.Name, u.MinS(3)),
+		},
+		"city": u.Schema{
+			"id":   u.Field(club.City.ID, u.MinN(1)),
+			"name": u.Field(club.City.Name, u.MinS(3)),
+			"state": u.Schema{
+				"id":   u.Field(club.City.State.ID, u.MinN(1)),
+				"name": u.Field(club.City.State.Name, u.MinS(3)),
+			},
+		},
+	})
 
-	if err := v.ValidateSouuup(); err != nil {
-		fmt.Println(err.Error())
-		t.Error("Expected validation to pass")
+	if err := v.Validate(); err != nil {
+		t.Errorf("Expected validation to pass, got error: %v", err)
 	}
 }
 
-func TestValidationFailure(t *testing.T) {
-	// Create a club instance with INVALID data to trigger failures
+func TestValidationWithInvalidValues(t *testing.T) {
 	emptyString := ""
-	shortAddress := "123" // Too short, will fail MinS(5)
+	shortAddress := "123"
 
 	club := Club{
-		ID:              0,             // Will fail MinN(1)
-		ClubDescription: "S",           // Too short, will fail MinS(3)
-		CityID:          0,             // Will fail MinN(1)
-		DistrictID:      0,             // Will fail MinN(1)
-		Image:           &emptyString,  // Empty, will fail MinS(5)
-		Address:         &shortAddress, // Too short, will fail MinS(5)
-		MapLocation:     nil,           // Nil pointer, will produce a separate error
-		Contact:         nil,           // Nil pointer, will produce a separate error
+		ID:         0,
+		Name:       "S",
+		CityID:     0,
+		DistrictID: 0,
+		Image:      &emptyString,
+		Address:    &shortAddress,
 		District: District{
-			ID:                  0,  // Will fail MinN(1)
-			DistrictDescription: "", // Empty, will fail MinS(3)
+			ID:   0,
+			Name: "",
 		},
 		City: City{
-			ID:              0,  // Will fail MinN(1)
-			CityDescription: "", // Empty, will fail MinS(3)
+			ID:   0,
+			Name: "",
 			State: State{
-				ID:               0,  // Will fail MinN(1)
-				StateDescription: "", // Empty, will fail MinS(3)
+				ID:   0,
+				Name: "",
 			},
 		},
 	}
 
-	// Validate the club, expecting multiple failures
-	v := u.Souuup{
-		"id":          u.Field(club.ID, u.MinN(1)),
-		"description": u.Field(club.ClubDescription, u.MinS(3)),
-		"cityId":      u.Field(club.CityID, u.MinN(1)),
-		"districtId":  u.Field(club.DistrictID, u.MinN(1)),
-		"image":       u.Field(*club.Image, u.MinS(5)),
-		"address":     u.Field(*club.Address, u.MinS(5)),
-		"district": u.Nested(u.Souuup{
-			"id":          u.Field(club.District.ID, u.MinN(1)),
-			"description": u.Field(club.District.DistrictDescription, u.MinS(3)),
-		}),
-		"city": u.Nested(u.Souuup{
-			"id":          u.Field(club.City.ID, u.MinN(1)),
-			"description": u.Field(club.City.CityDescription, u.MinS(3)),
-			"state": u.Nested(u.Souuup{
-				"id":          u.Field(club.City.State.ID, u.MinN(1)),
-				"description": u.Field(club.City.State.StateDescription, u.MinS(3)),
-			}),
-		}),
+	defaultStr := ""
+	imageToValidate := defaultStr
+	if club.Image != nil {
+		imageToValidate = *club.Image
 	}
 
-	err := v.ValidateSouuup()
+	addressToValidate := defaultStr
+	if club.Address != nil {
+		addressToValidate = *club.Address
+	}
+
+	v := u.NewSouuup(u.Schema{
+		"id":         u.Field(club.ID, u.MinN(1)),
+		"name":       u.Field(club.Name, u.MinS(3)),
+		"cityId":     u.Field(club.CityID, u.MinN(1)),
+		"districtId": u.Field(club.DistrictID, u.MinN(1)),
+		"image":      u.Field(imageToValidate, u.MinS(5)),
+		"address":    u.Field(addressToValidate, u.MinS(5)),
+		"district": u.Schema{
+			"id":   u.Field(club.District.ID, u.MinN(1)),
+			"name": u.Field(club.District.Name, u.MinS(3)),
+		},
+		"city": u.Schema{
+			"id":   u.Field(club.City.ID, u.MinN(1)),
+			"name": u.Field(club.City.Name, u.MinS(3)),
+			"state": u.Schema{
+				"id":   u.Field(club.City.State.ID, u.MinN(1)),
+				"name": u.Field(club.City.State.Name, u.MinS(3)),
+			},
+		},
+	})
+
+	err := v.Validate()
 	if err == nil {
 		t.Fatal("Expected validation to fail, but it passed")
 	}
+}
 
-	// Print the error to see the JSON output format
-	fmt.Println("Validation Error JSON:")
-	fmt.Println(err.Error())
+func TestValidationWithNilPointers(t *testing.T) {
+	club := Club{
+		ID:          1,
+		Name:        "Sports Club",
+		CityID:      2,
+		DistrictID:  3,
+		Image:       nil,
+		Address:     nil,
+		MapLocation: nil,
+		Contact:     nil,
+		District: District{
+			ID:   3,
+			Name: "Downtown",
+		},
+		City: City{
+			ID:   2,
+			Name: "Metropolis",
+			State: State{
+				ID:   4,
+				Name: "North State",
+			},
+		},
+	}
+
+	defaultStr := ""
+
+	imageToValidate := defaultStr
+	if club.Image != nil {
+		imageToValidate = *club.Image
+	}
+
+	addressToValidate := defaultStr
+	if club.Address != nil {
+		addressToValidate = *club.Address
+	}
+
+	v := u.NewSouuup(u.Schema{
+		"id":         u.Field(club.ID, u.MinN(1)),
+		"name":       u.Field(club.Name, u.MinS(3)),
+		"cityId":     u.Field(club.CityID, u.MinN(1)),
+		"districtId": u.Field(club.DistrictID, u.MinN(1)),
+		"image":      u.Field(imageToValidate, u.MinS(5)),
+		"address":    u.Field(addressToValidate, u.MinS(5)),
+		"district": u.Schema{
+			"id":   u.Field(club.District.ID, u.MinN(1)),
+			"name": u.Field(club.District.Name, u.MinS(3)),
+		},
+		"city": u.Schema{
+			"id":   u.Field(club.City.ID, u.MinN(1)),
+			"name": u.Field(club.City.Name, u.MinS(3)),
+			"state": u.Schema{
+				"id":   u.Field(club.City.State.ID, u.MinN(1)),
+				"name": u.Field(club.City.State.Name, u.MinS(3)),
+			},
+		},
+	})
+
+	err := v.Validate()
+	if err == nil {
+		t.Fatal("Expected validation to fail due to nil pointers, but it passed")
+	}
+}
+
+func TestComplexValidationFailure(t *testing.T) {
+	shortImage := "img"
+	shortAddress := "123"
+	emptyContact := ""
+
+	club := Club{
+		ID:          -5,   // Invalid: negative number
+		Name:        "AB", // Invalid: too short
+		CityID:      0,    // Invalid: should be > 0
+		DistrictID:  -2,   // Invalid: negative number
+		Image:       &shortImage,
+		Address:     &shortAddress,
+		MapLocation: nil,
+		Contact:     &emptyContact,
+		District: District{
+			ID:   0,   // Invalid: should be > 0
+			Name: "D", // Invalid: too short
+		},
+		City: City{
+			ID:   0,   // Invalid: should be > 0
+			Name: "C", // Invalid: too short
+			State: State{
+				ID:   0,  // Invalid: should be > 0
+				Name: "", // Invalid: empty string
+			},
+		},
+	}
+
+	defaultStr := ""
+
+	imageToValidate := defaultStr
+	if club.Image != nil {
+		imageToValidate = *club.Image
+	}
+
+	addressToValidate := defaultStr
+	if club.Address != nil {
+		addressToValidate = *club.Address
+	}
+
+	contactToValidate := defaultStr
+	if club.Contact != nil {
+		contactToValidate = *club.Contact
+	}
+
+	mapLocationToValidate := defaultStr
+	if club.MapLocation != nil {
+		mapLocationToValidate = *club.MapLocation
+	}
+
+	v := u.NewSouuup(u.Schema{
+		"id":          u.Field(club.ID, u.MinN(1), u.MaxN(1000)),
+		"name":        u.Field(club.Name, u.MinS(3), u.MaxS(50)),
+		"cityId":      u.Field(club.CityID, u.MinN(1)),
+		"districtId":  u.Field(club.DistrictID, u.MinN(1)),
+		"image":       u.Field(imageToValidate, u.MinS(5), u.MaxS(200)),
+		"address":     u.Field(addressToValidate, u.MinS(5), u.MaxS(200)),
+		"contact":     u.Field(contactToValidate, u.MinS(5)),
+		"mapLocation": u.Field(mapLocationToValidate, u.MinS(5)),
+		"district": u.Schema{
+			"id":   u.Field(club.District.ID, u.MinN(1)),
+			"name": u.Field(club.District.Name, u.MinS(3), u.MaxS(100)),
+		},
+		"city": u.Schema{
+			"id":   u.Field(club.City.ID, u.MinN(1)),
+			"name": u.Field(club.City.Name, u.MinS(3), u.MaxS(50)),
+			"state": u.Schema{
+				"id":   u.Field(club.City.State.ID, u.MinN(1)),
+				"name": u.Field(club.City.State.Name, u.MinS(3), u.MaxS(50)),
+			},
+		},
+	})
+
+	err := v.Validate()
+	if err == nil {
+		t.Fatal("Expected validation to fail with multiple errors, but it passed")
+	}
+
+	fmt.Println("Validation Errors:")
+	var prettyJSON map[string]any
+	json.Unmarshal([]byte(err.Error()), &prettyJSON)
+	prettyOutput, _ := json.MarshalIndent(prettyJSON, "", "  ")
+	fmt.Println(string(prettyOutput))
 }
