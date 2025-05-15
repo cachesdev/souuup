@@ -1,37 +1,59 @@
 // main package of Soup
 package u
 
-import (
-	"golang.org/x/exp/constraints"
-)
-
 // FieldTag represents the "key" of a field, and will be used to identify a field on
 // an error map
 type FieldTag = string
 
-// a Souuup instance
-type Souuup map[FieldTag]Validable
-
-// a Souuup instance for boring people
-type Validator = Souuup
-
-type Numeric interface {
-	constraints.Signed | constraints.Float
+// Internal State
+type souuupState struct {
+	errors *ValidationError
 }
 
-// Valid runs validation on every field, and sets the error map.
-func (v Souuup) Valid() bool {
-	for tag, field := range v {
-		field.SetTag(tag)
-		if !field.Validate() {
-			return false
-		}
+// Schema of all validable fields/nested fields
+// Schema is itself Validable
+type Schema map[FieldTag]Validable
+
+var _ Validable = (*Schema)(nil)
+
+// A Souuup Instance
+type Souuup struct {
+	state  *souuupState
+	schema Schema
+}
+
+func NewSouuup(schema Schema) *Souuup {
+	return &Souuup{
+		state:  &souuupState{NewValidationError()},
+		schema: schema,
 	}
-	return true
+}
+
+func (u *Souuup) Validate() error {
+	u.schema.Validate(u.state.errors)
+
+	if u.state.errors.HasErrors() {
+		return u.state.errors
+	}
+	return nil
+}
+
+func (s Schema) Validate(errors *ValidationError) {
+	for tag, field := range s {
+		errors.NestedErrors[tag] = NewValidationError()
+		errors.NestedErrors[tag].Parent = errors
+
+		field.Validate(errors.NestedErrors[tag])
+	}
+}
+
+func (s Schema) Errors() *ValidationError {
+	errors := NewValidationError()
+	s.Validate(errors)
+	return errors
 }
 
 type Validable interface {
-	Validate() bool
-	Tag() string
-	SetTag(string)
+	Validate(*ValidationError)
+	Errors() *ValidationError
 }

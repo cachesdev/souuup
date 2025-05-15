@@ -3,7 +3,7 @@ package u
 type FieldState[T any] struct {
 	value  T
 	tag    string
-	errors []error
+	errors *ValidationError
 }
 
 type FieldDef[T any] struct {
@@ -11,14 +11,15 @@ type FieldDef[T any] struct {
 	rules []Rule[T]
 }
 
-// A single implementation for all types
-func (f FieldDef[T]) Validate() bool {
+var _ Validable = (*FieldDef[any])(nil)
+
+func (f *FieldDef[T]) Validate(errors *ValidationError) {
 	for _, rule := range f.rules {
-		if !rule(f.state) {
-			return false
+		ruleErr := rule(f.state)
+		if ruleErr != nil {
+			errors.AddError(f.state.tag, ruleErr)
 		}
 	}
-	return true
 }
 
 // Returns a FieldTag
@@ -29,6 +30,10 @@ func (f FieldDef[T]) Tag() string {
 // Sets a FieldTag
 func (f FieldDef[T]) SetTag(tag string) {
 	f.state.tag = tag
+}
+
+func (f FieldDef[T]) Errors() *ValidationError {
+	return f.state.errors
 }
 
 // Field is the main function in Validator. It takes a value to validate,
