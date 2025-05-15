@@ -1,8 +1,10 @@
 package u_test
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	u "github.com/cachesdev/souuup/uuu"
@@ -317,6 +319,148 @@ func TestValidationError_ToMap(t *testing.T) {
 
 			// Assert
 			verifyMap(t, result, tc.expected)
+		})
+	}
+}
+
+func TestValidationError_Error(t *testing.T) {
+	t.Run("returns empty string for ValidationError with no errors", func(t *testing.T) {
+		// Arrange
+		ve := u.NewValidationError()
+
+		// Act
+		result := ve.Error()
+
+		// Assert
+		if result != "" {
+			t.Errorf("expected empty string for ValidationError with no errors, got %q", result)
+		}
+	})
+
+	type testCase struct {
+		name     string
+		setup    func() *u.ValidationError
+		expected string
+		contains []string // Substrings that should be in the error message
+	}
+
+	verifyErrorString := func(t *testing.T, result string, tc testCase) {
+		t.Helper()
+
+		var jsonObj map[string]any
+		if err := json.Unmarshal([]byte(result), &jsonObj); err != nil {
+			t.Errorf("error string is not valid JSON: %v", err)
+		}
+
+		// If expected is provided, check for an exact match
+		if tc.expected != "" && result != tc.expected {
+			t.Errorf("expected exact error %q, got %q", tc.expected, result)
+			return
+		}
+
+		// Else, check for substrings being contained in the result
+		for _, substr := range tc.contains {
+			if !strings.Contains(result, substr) {
+				t.Errorf("expected error string to contain %q, but got %q", substr, result)
+			}
+		}
+	}
+
+	tests := []testCase{
+		{
+			name: "single direct error",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				ve.AddError("username", errors.New("must be at least 3 characters"))
+				return ve
+			},
+			expected: `{"username":{"errors":["must be at least 3 characters"]}}`,
+		},
+		{
+			name: "multiple direct errors on different fields",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				ve.AddError("username", errors.New("must be at least 3 characters"))
+				ve.AddError("email", errors.New("must be a valid email"))
+				return ve
+			},
+			contains: []string{
+				`"username":{"errors":["must be at least 3 characters"]}`,
+				`"email":{"errors":["must be a valid email"]}`,
+			},
+		},
+		{
+			name: "multiple errors on same field",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				ve.AddError("password", errors.New("too short"))
+				ve.AddError("password", errors.New("needs special characters"))
+				return ve
+			},
+			expected: `{"password":{"errors":["too short","needs special characters"]}}`,
+		},
+		{
+			name: "nested errors",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				nested := ve.GetOrCreateNested("address")
+				nested.AddError("street", errors.New("cannot be empty"))
+				return ve
+			},
+			expected: `{"address":{"street":{"errors":["cannot be empty"]}}}`,
+		},
+		{
+			name: "deeply nested errors",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				level1 := ve.GetOrCreateNested("user")
+				level2 := level1.GetOrCreateNested("address")
+				level2.AddError("postcode", errors.New("invalid format"))
+				return ve
+			},
+			expected: `{"user":{"address":{"postcode":{"errors":["invalid format"]}}}}`,
+		},
+		{
+			name: "direct and nested errors combined",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				ve.AddError("username", errors.New("invalid username"))
+				nested := ve.GetOrCreateNested("profile")
+				nested.AddError("bio", errors.New("too long"))
+				return ve
+			},
+			contains: []string{
+				`"username":{"errors":["invalid username"]}`,
+				`"profile":{"bio":{"errors":["too long"]}}`,
+			},
+		},
+		{
+			name: "field with both direct and nested errors",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				ve.AddError("address", errors.New("invalid address"))
+				nested := ve.GetOrCreateNested("address")
+				nested.AddError("street", errors.New("cannot be empty"))
+				return ve
+			},
+			contains: []string{
+				`"address"`,
+				`"errors":["invalid address"]`,
+				`"street":{"errors":["cannot be empty"]}`,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			ve := tc.setup()
+
+			// Act
+			result := ve.Error()
+
+			// Assert
+			verifyErrorString(t, result, tc)
 		})
 	}
 }
