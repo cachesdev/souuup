@@ -2,7 +2,6 @@ package u
 
 type FieldState[T any] struct {
 	value  T
-	tag    string
 	errors *ValidationError
 }
 
@@ -13,23 +12,13 @@ type FieldDef[T any] struct {
 
 var _ Validable = (*FieldDef[any])(nil)
 
-func (f *FieldDef[T]) Validate(errors *ValidationError) {
+func (f *FieldDef[T]) Validate(errors *ValidationError, tag FieldTag) {
 	for _, rule := range f.rules {
 		ruleErr := rule(f.state)
 		if ruleErr != nil {
-			errors.AddError(f.state.tag, ruleErr)
+			errors.AddError(tag, ruleErr)
 		}
 	}
-}
-
-// Returns a FieldTag
-func (f FieldDef[T]) Tag() string {
-	return f.state.tag
-}
-
-// Sets a FieldTag
-func (f FieldDef[T]) SetTag(tag string) {
-	f.state.tag = tag
 }
 
 func (f FieldDef[T]) Errors() *ValidationError {
