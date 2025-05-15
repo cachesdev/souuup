@@ -30,6 +30,9 @@ type ValidationError struct {
 	Parent       *ValidationError
 }
 
+// Alias for brevity when returning from ValidationError.ToMap()
+type ToMapResult = map[string]map[string]any
+
 // Helper to avoid nil maps
 func NewValidationError() *ValidationError {
 	return &ValidationError{
@@ -66,16 +69,14 @@ func (ve *ValidationError) HasErrors() bool {
 // - Other keys: nested validation structures
 //
 // INFO: Does many recursive calls. maybe performance issues?
-func (ve *ValidationError) ToMap() map[string]map[string]any {
-	// recursive
+func (ve *ValidationError) ToMap() ToMapResult {
 	if !ve.HasErrors() {
 		return nil
 	}
 
-	result := make(map[string]map[string]any, len(ve.Errors)+len(ve.NestedErrors))
+	result := make(ToMapResult, len(ve.Errors)+len(ve.NestedErrors))
 
 	// Add direct field errors
-	// state 1: {"field1": {"errors": ["a validation error"]}}
 	for field, errors := range ve.Errors {
 		result[field] = map[string]any{
 			"errors": errors,
@@ -83,10 +84,6 @@ func (ve *ValidationError) ToMap() map[string]map[string]any {
 	}
 
 	// Add nested field errors
-	// state 2: {"field1": {
-	//             "errors": ["a validation error"],
-	//             "field2": {"errors": ["a validation error"]}
-	//           }}
 	for nestedField, nestedErr := range ve.NestedErrors {
 		if nestedErr.HasErrors() {
 			// recursive

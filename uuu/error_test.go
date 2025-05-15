@@ -2,6 +2,7 @@ package u_test
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	u "github.com/cachesdev/souuup/uuu"
@@ -176,6 +177,148 @@ func TestValidationError_HasErrors(t *testing.T) {
 		// Assert
 		assertHasErrorsFalse(t, hasErrors)
 	})
+}
+
+func TestValidationError_ToMap(t *testing.T) {
+	t.Run("returns nil for ValidationError with no errors", func(t *testing.T) {
+		// Arrange
+		ve := u.NewValidationError()
+
+		// Act
+		result := ve.ToMap()
+
+		// Assert
+		if result != nil {
+			t.Errorf("expected nil for ValidationError with no errors, got %v", result)
+		}
+	})
+
+	type testCase struct {
+		name     string
+		setup    func() *u.ValidationError
+		expected u.ToMapResult
+	}
+
+	verifyMap := func(t *testing.T, result, expected u.ToMapResult) {
+		t.Helper()
+
+		if !reflect.DeepEqual(result, expected) {
+			t.Errorf("map mismatch:expected %v, got %v", expected, result)
+		}
+	}
+
+	tests := []testCase{
+		{
+			name: "direct field errors only",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				ve.AddError("username", errors.New("must be at least 3 characters"))
+				ve.AddError("email", errors.New("cannot be empty"))
+				return ve
+			},
+			expected: u.ToMapResult{
+				"username": {"errors": u.RuleErrors{"must be at least 3 characters"}},
+				"email":    {"errors": u.RuleErrors{"cannot be empty"}},
+			},
+		},
+		{
+			name: "nested field errors only (one level)",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				nested := ve.GetOrCreateNested("address")
+				nested.AddError("street", errors.New("cannot be empty"))
+				nested.AddError("city", errors.New("cannot be empty"))
+				return ve
+			},
+			expected: u.ToMapResult{
+				"address": {
+					"street": map[string]any{"errors": u.RuleErrors{"cannot be empty"}},
+					"city":   map[string]any{"errors": u.RuleErrors{"cannot be empty"}},
+				},
+			},
+		},
+		{
+			name: "combination of direct and nested errors",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				ve.AddError("username", errors.New("must be at least 3 characters"))
+				nested := ve.GetOrCreateNested("address")
+				nested.AddError("street", errors.New("cannot be empty"))
+				return ve
+			},
+			expected: u.ToMapResult{
+				"username": {
+					"errors": u.RuleErrors{"must be at least 3 characters"},
+				},
+				"address": {
+					"street": map[string]any{"errors": u.RuleErrors{"cannot be empty"}},
+				},
+			},
+		},
+		{
+			name: "deeply nested errors (multiple levels)",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				level1 := ve.GetOrCreateNested("user")
+				level2 := level1.GetOrCreateNested("address")
+				level2.AddError("postcode", errors.New("invalid format"))
+				return ve
+			},
+			expected: u.ToMapResult{
+				"user": {
+					"address": map[string]any{
+						"postcode": map[string]any{"errors": u.RuleErrors{"invalid format"}},
+					},
+				},
+			},
+		},
+		{
+			name: "field with both direct and nested errors",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				ve.AddError("address", errors.New("invalid address"))
+				nested := ve.GetOrCreateNested("address")
+				nested.AddError("street", errors.New("cannot be empty"))
+				return ve
+			},
+			expected: u.ToMapResult{
+				"address": {
+					"errors": u.RuleErrors{"invalid address"},
+					"street": map[string]any{"errors": u.RuleErrors{"cannot be empty"}},
+				},
+			},
+		},
+		{
+			name: "multiple errors for the same field",
+			setup: func() *u.ValidationError {
+				ve := u.NewValidationError()
+				ve.AddError("password", errors.New("too short"))
+				ve.AddError("password", errors.New("needs special characters"))
+				ve.AddError("password", errors.New("needs numbers"))
+				return ve
+			},
+			expected: u.ToMapResult{
+				"password": {"errors": u.RuleErrors{
+					"too short",
+					"needs special characters",
+					"needs numbers",
+				}},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
+			ve := tc.setup()
+
+			// Act
+			result := ve.ToMap()
+
+			// Assert
+			verifyMap(t, result, tc.expected)
+		})
+	}
 }
 
 // Helpers
