@@ -7,6 +7,38 @@ import (
 	u "github.com/cachesdev/souuup/uuu"
 )
 
+func TestValidationError_NewValidationError(t *testing.T) {
+	t.Run("returns a pointer to ValidationError", func(t *testing.T) {
+		// Act
+		ve := u.NewValidationError()
+
+		// Assert
+		if ve == nil {
+			t.Error("expected NewValidationError() to return a non-nil pointer")
+		}
+	})
+
+	t.Run("initialises with empty fields", func(t *testing.T) {
+		// Act
+		ve := u.NewValidationError()
+
+		// Assert
+		if ve.Errors == nil {
+			t.Error("expected Errors map to be initialised, but it was nil")
+		}
+		assertErroredFieldsLen(t, ve, 0)
+		if ve.NestedErrors == nil {
+			t.Error("expected NestedErrors map to be initialised, but it was nil")
+		}
+		if len(ve.NestedErrors) != 0 {
+			t.Errorf("expected NestedErrors map to be empty, but it had %d entries", len(ve.NestedErrors))
+		}
+		if ve.Parent != nil {
+			t.Error("expected Parent to be nil for newly created ValidationError")
+		}
+	})
+}
+
 func TestValidationError_AddError(t *testing.T) {
 	t.Run("adds error to empty ValidationError", func(t *testing.T) {
 		// Arrange
@@ -19,7 +51,7 @@ func TestValidationError_AddError(t *testing.T) {
 		ve.AddError(testField, testErr)
 
 		// Assert
-		assertFieldsWithErrorsLen(t, ve, 1)
+		assertErroredFieldsLen(t, ve, 1)
 		assertFieldHasErrors(t, testField, ve.Errors[testField])
 		assertErrorsLen(t, testField, ve.Errors[testField], 1)
 		assertErrorMessage(t, ve.Errors[testField][0].Error(), testErrMsg)
@@ -39,7 +71,7 @@ func TestValidationError_AddError(t *testing.T) {
 		ve.AddError(testField, secondErr)
 
 		// Assert
-		assertFieldsWithErrorsLen(t, ve, 1)
+		assertErroredFieldsLen(t, ve, 1)
 		assertFieldHasErrors(t, testField, ve.Errors[testField])
 		assertErrorsLen(t, testField, ve.Errors[testField], 2)
 		assertErrorMessage(t, ve.Errors[testField][0].Error(), firstErrMsg)
@@ -61,7 +93,7 @@ func TestValidationError_AddError(t *testing.T) {
 		ve.AddError(emailField, emailErr)
 
 		// Assert
-		assertFieldsWithErrorsLen(t, ve, 2)
+		assertErroredFieldsLen(t, ve, 2)
 		assertFieldHasErrors(t, usernameField, ve.Errors[usernameField])
 		assertFieldHasErrors(t, emailField, ve.Errors[emailField])
 		assertErrorMessage(t, ve.Errors[usernameField][0].Error(), usernameErrMsg)
@@ -148,7 +180,7 @@ func TestValidationError_HasErrors(t *testing.T) {
 
 // Helpers
 
-func assertFieldsWithErrorsLen(t *testing.T, ve *u.ValidationError, want int) {
+func assertErroredFieldsLen(t *testing.T, ve *u.ValidationError, want int) {
 	t.Helper()
 	if len(ve.Errors) != want {
 		t.Errorf("expected %d fields with errors, got %d", want, len(ve.Errors))
