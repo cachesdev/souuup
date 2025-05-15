@@ -3,13 +3,12 @@ package u
 import (
 	"encoding/json"
 	"fmt"
-	"maps"
 )
 
 // RuleError represents a single validation rule failure.
 type RuleError string
 
-// Neded for internal usage in Souup.Validate()
+// Needed for internal usage in Souuup.Validate()
 func (re RuleError) Error() string {
 	return string(re)
 }
@@ -51,13 +50,13 @@ func (ve *ValidationError) MarshalJSON() ([]byte, error) {
 // - Other keys: nested validation structures
 //
 // INFO: Does many recursive calls. maybe performance issues?
-func (ve *ValidationError) ToMap() map[string]any {
+func (ve *ValidationError) ToMap() map[string]map[string]any {
 	// recursive
 	if !ve.HasErrors() {
 		return nil
 	}
 
-	result := make(map[string]any, len(ve.Errors)+len(ve.NestedErrors))
+	result := make(map[string]map[string]any, len(ve.Errors)+len(ve.NestedErrors))
 
 	// Add direct field errors
 	// state 1: {"field1": {"errors": ["a validation error"]}}
@@ -68,6 +67,10 @@ func (ve *ValidationError) ToMap() map[string]any {
 	}
 
 	// Add nested field errors
+	// state 2: {"field1": {
+	//             "errors": ["a validation error"],
+	//             "field2": {"errors": ["a validation error"]}
+	//           }}
 	for nestedField, nestedErr := range ve.NestedErrors {
 		if nestedErr.HasErrors() {
 			// recursive
@@ -77,12 +80,17 @@ func (ve *ValidationError) ToMap() map[string]any {
 			if existing, exists := result[nestedField]; exists {
 				// If entry exists as a map (from direct errors), merge the nested data
 				// the merge is between keys. same keys will be will replaced!
-				if existingMap, ok := existing.(map[string]any); ok {
-					maps.Copy(existingMap, nestedMap)
+				// Manually copy each key-value pair because maps.Copy isn't type smart enough
+				for k, v := range nestedMap {
+					existing[k] = v
 				}
 			} else {
 				// No existing entry, add the nested map directly
-				result[nestedField] = nestedMap
+				// Copy all nested values since the type inference isn't smart enough to directly assign nestedMap
+				result[nestedField] = make(map[string]any)
+				for k, v := range nestedMap {
+					result[nestedField][k] = v
+				}
 			}
 		}
 	}
