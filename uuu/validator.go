@@ -16,7 +16,7 @@ type Schema map[FieldTag]Validable
 
 var _ Validable = (*Schema)(nil)
 
-// A Souup Instance
+// A Souuup Instance
 type Souuup struct {
 	state  *souuupState
 	schema Schema
@@ -38,8 +38,8 @@ func (u *Souuup) Validate() error {
 	return nil
 }
 
-func (d Schema) Validate(errors *ValidationError) {
-	for tag, field := range d {
+func (s Schema) Validate(errors *ValidationError) {
+	for tag, field := range s {
 		errors.NestedErrors[tag] = NewValidationError()
 		errors.NestedErrors[tag].Parent = errors
 
@@ -47,8 +47,10 @@ func (d Schema) Validate(errors *ValidationError) {
 	}
 }
 
-func (d Schema) Errors() *ValidationError {
-	return d.Errors()
+func (s Schema) Errors() *ValidationError {
+	errors := NewValidationError()
+	s.Validate(errors)
+	return errors
 }
 
 type Validable interface {
