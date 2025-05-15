@@ -38,12 +38,17 @@ func (u *Souuup) Validate() error {
 	return nil
 }
 
-func (s Schema) Validate(errors *ValidationError, _ FieldTag) {
+func (s Schema) Validate(ve *ValidationError, _ FieldTag) {
 	for tag, fieldOrSchema := range s {
-		errors.NestedErrors[tag] = NewValidationError()
-		errors.NestedErrors[tag].Parent = errors
-
-		fieldOrSchema.Validate(errors.NestedErrors[tag], tag)
+		if schema, ok := fieldOrSchema.(Schema); ok {
+			newVe := NewValidationError()
+			newVe.Parent = ve
+			ve.NestedErrors[tag] = newVe
+			schema.Validate(newVe, tag)
+		} else {
+			field := fieldOrSchema
+			field.Validate(ve, tag)
+		}
 	}
 }
 

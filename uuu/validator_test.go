@@ -354,6 +354,4 @@ func TestComplexValidationFailure(t *testing.T) {
 	json.Unmarshal([]byte(err.Error()), &prettyJSON)
 	prettyOutput, _ := json.MarshalIndent(prettyJSON, "", "  ")
 	fmt.Println(string(prettyOutput))
-
-	t.Fail()
 }

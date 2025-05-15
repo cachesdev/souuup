@@ -12,11 +12,11 @@ type FieldDef[T any] struct {
 
 var _ Validable = (*FieldDef[any])(nil)
 
-func (f *FieldDef[T]) Validate(errors *ValidationError, tag FieldTag) {
+func (f *FieldDef[T]) Validate(ve *ValidationError, tag FieldTag) {
 	for _, rule := range f.rules {
 		ruleErr := rule(f.state)
 		if ruleErr != nil {
-			errors.AddError(tag, ruleErr)
+			ve.AddError(tag, ruleErr)
 		}
 	}
 }
