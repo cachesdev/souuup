@@ -12,6 +12,17 @@ type FieldDef[T any] struct {
 
 var _ Validable = (*FieldDef[any])(nil)
 
+// Field is the main function in Validator. It takes a value to validate,
+// and a set of rules that will match the type of the given value.
+func Field[T any](value T, rules ...Rule[T]) *FieldDef[T] {
+	return &FieldDef[T]{
+		state: FieldState[T]{
+			value: value,
+		},
+		rules: rules,
+	}
+}
+
 func (f *FieldDef[T]) Validate(ve *ValidationError, tag FieldTag) {
 	for _, rule := range f.rules {
 		ruleErr := rule(f.state)
@@ -23,15 +34,4 @@ func (f *FieldDef[T]) Validate(ve *ValidationError, tag FieldTag) {
 
 func (f FieldDef[T]) Errors() *ValidationError {
 	return f.state.errors
-}
-
-// Field is the main function in Validator. It takes a value to validate,
-// and a set of rules that will match the type of the given value.
-func Field[T any](value T, rules ...Rule[T]) *FieldDef[T] {
-	return &FieldDef[T]{
-		state: FieldState[T]{
-			value: value,
-		},
-		rules: rules,
-	}
 }
