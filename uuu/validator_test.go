@@ -235,7 +235,7 @@ func TestSchema_Validate(t *testing.T) {
 			t.Error("expected validation errors from complex schema")
 		}
 
-		// Helper to check if a nested path has errors using the ve internal structure
+		// Helper to check if a nested path has errors
 		checkNestedPath := func(path string) bool {
 			parts := strings.Split(path, ".")
 			currentVE := ve
@@ -307,6 +307,217 @@ func TestSchema_Errors(t *testing.T) {
 		// Assert
 		if !errors.HasErrors() {
 			t.Error("expected validation errors for invalid schema")
+		}
+	})
+}
+
+func TestSouuup_Validate(t *testing.T) {
+	t.Run("returns nil for valid empty schema", func(t *testing.T) {
+		// Arrange
+		schema := u.Schema{}
+		souuup := u.NewSouuup(schema)
+
+		// Act
+		err := souuup.Validate()
+
+		// Assert
+		if err != nil {
+			t.Errorf("expected nil error for valid empty schema, got %v", err)
+		}
+	})
+
+	t.Run("returns nil for valid schema with fields", func(t *testing.T) {
+		// Arrange
+		schema := u.Schema{
+			"field1": &mockValidable{hasErrors: false},
+			"field2": &mockValidable{hasErrors: false},
+		}
+		souuup := u.NewSouuup(schema)
+
+		// Act
+		err := souuup.Validate()
+
+		// Assert
+		if err != nil {
+			t.Errorf("expected nil error for valid schema with fields, got %v", err)
+		}
+	})
+
+	t.Run("returns validation error for invalid schema", func(t *testing.T) {
+		// Arrange
+		schema := u.Schema{
+			"field1": &mockValidable{hasErrors: true, errorMessage: "field1 error"},
+		}
+		souuup := u.NewSouuup(schema)
+
+		// Act
+		err := souuup.Validate()
+
+		// Assert
+		if err == nil {
+			t.Error("expected validation error for invalid schema, got nil")
+		}
+
+		if !strings.Contains(err.Error(), "field1 error") {
+			t.Errorf("error message %q does not contain expected error message", err.Error())
+		}
+	})
+
+	t.Run("validates nested fields correctly", func(t *testing.T) {
+		// Arrange
+		nestedField := &mockValidable{hasErrors: true, errorMessage: "nested error"}
+		schema := u.Schema{
+			"parent": u.Schema{
+				"nested": nestedField,
+			},
+		}
+		souuup := u.NewSouuup(schema)
+
+		// Act
+		err := souuup.Validate()
+
+		// Assert
+		if err == nil {
+			t.Error("expected validation error for schema with invalid nested field")
+		}
+
+		if !nestedField.validateCalled {
+			t.Error("expected Validate() to be called on nested field")
+		}
+
+		if !strings.Contains(err.Error(), "nested error") {
+			t.Errorf("error message %q does not contain expected nested error message", err.Error())
+		}
+	})
+
+	t.Run("handles complex mixed valid/invalid schema", func(t *testing.T) {
+		// Arrange
+		validField := &mockValidable{hasErrors: false}
+		invalidField1 := &mockValidable{hasErrors: true, errorMessage: "error1"}
+		invalidField2 := &mockValidable{hasErrors: true, errorMessage: "error2"}
+
+		schema := u.Schema{
+			"valid":    validField,
+			"invalid1": invalidField1,
+			"parent": u.Schema{
+				"invalid2": invalidField2,
+				"valid2":   &mockValidable{hasErrors: false},
+			},
+		}
+		souuup := u.NewSouuup(schema)
+
+		// Act
+		err := souuup.Validate()
+
+		// Assert
+		if err == nil {
+			t.Error("expected validation error for mixed valid/invalid schema")
+		}
+
+		if !validField.validateCalled {
+			t.Error("expected Validate() to be called on valid field")
+		}
+		if !invalidField1.validateCalled {
+			t.Error("expected Validate() to be called on invalid field 1")
+		}
+		if !invalidField2.validateCalled {
+			t.Error("expected Validate() to be called on invalid field 2")
+		}
+
+		errStr := err.Error()
+		if !strings.Contains(errStr, "error1") {
+			t.Errorf("error message %q does not contain expected error message 'error1'", errStr)
+		}
+		if !strings.Contains(errStr, "error2") {
+			t.Errorf("error message %q does not contain expected error message 'error2'", errStr)
+		}
+	})
+
+	t.Run("complex schema error paths are correctly formed", func(t *testing.T) {
+		// Arrange
+		tc := newComplexTestCase()
+		souuup := u.NewSouuup(tc.schema)
+
+		// Act
+		err := souuup.Validate()
+
+		// Assert
+		if err == nil {
+			t.Error("expected validation error for complex schema")
+		}
+
+		errStr := err.Error()
+		for _, errMsg := range tc.expectedErrorMessages {
+			if !strings.Contains(errStr, errMsg) {
+				t.Errorf("error message %q does not contain expected message %q", errStr, errMsg)
+			}
+		}
+	})
+}
+
+func TestValidator_NewSouuup(t *testing.T) {
+	t.Run("returns a pointer to Souuup", func(t *testing.T) {
+		// Act
+		schema := u.Schema{}
+		s := u.NewSouuup(schema)
+
+		// Assert
+		if s == nil {
+			t.Error("expected NewSouuup() to return a non-nil pointer")
+		}
+	})
+
+	t.Run("initialises with empty schema", func(t *testing.T) {
+		// Arrange
+		schema := u.Schema{}
+
+		// Act
+		s := u.NewSouuup(schema)
+
+		// Assert
+		err := s.Validate()
+		if err != nil {
+			t.Errorf("expected no validation errors for empty schema, got %v", err)
+		}
+	})
+
+	t.Run("initialises with provided schema", func(t *testing.T) {
+		// Arrange
+		schema := u.Schema{
+			"test": &mockValidable{
+				hasErrors: false,
+			},
+		}
+
+		// Act
+		s := u.NewSouuup(schema)
+
+		// Assert
+		err := s.Validate()
+		if err != nil {
+			t.Errorf("expected no validation errors for valid schema, got %v", err)
+		}
+	})
+
+	t.Run("validates schema on validate call", func(t *testing.T) {
+		// Arrange
+		mockField := &mockValidable{
+			hasErrors: true,
+		}
+		schema := u.Schema{
+			"test": mockField,
+		}
+
+		// Act
+		s := u.NewSouuup(schema)
+		err := s.Validate()
+
+		// Assert
+		if err == nil {
+			t.Error("expected validation errors but got nil")
+		}
+		if !mockField.validateCalled {
+			t.Error("expected Validate() to be called on schema field")
 		}
 	})
 }
@@ -388,6 +599,35 @@ func newComplexSchemaTestCase() complexSchemaTestCase {
 			"user.email",
 			"user.address.city",
 			"billing.name",
+		},
+	}
+}
+
+type complexTestCase struct {
+	schema                u.Schema
+	expectedErrorMessages []string
+}
+
+func newComplexTestCase() complexTestCase {
+	return complexTestCase{
+		schema: u.Schema{
+			"username": &mockValidable{hasErrors: true, errorMessage: "username too short"},
+			"email":    &mockValidable{hasErrors: true, errorMessage: "invalid email format"},
+			"profile": u.Schema{
+				"bio": &mockValidable{hasErrors: true, errorMessage: "bio too long"},
+				"age": &mockValidable{hasErrors: false},
+			},
+			"settings": u.Schema{
+				"notifications": u.Schema{
+					"email": &mockValidable{hasErrors: true, errorMessage: "invalid notification setting"},
+				},
+			},
+		},
+		expectedErrorMessages: []string{
+			"username too short",
+			"invalid email format",
+			"bio too long",
+			"invalid notification setting",
 		},
 	}
 }
