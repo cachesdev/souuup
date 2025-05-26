@@ -2,7 +2,7 @@
 package u
 
 // FieldTag represents the "key" of a field, and will be used to identify a field on
-// an error map
+// an error map and schema
 type FieldTag = string
 
 // Internal State
@@ -30,7 +30,7 @@ func NewSouuup(schema Schema) *Souuup {
 }
 
 func (u *Souuup) Validate() error {
-	u.schema.Validate(u.state.errors)
+	u.schema.Validate(u.state.errors, "")
 
 	if u.state.errors.HasErrors() {
 		return u.state.errors
@@ -38,22 +38,27 @@ func (u *Souuup) Validate() error {
 	return nil
 }
 
-func (s Schema) Validate(errors *ValidationError) {
-	for tag, field := range s {
-		errors.NestedErrors[tag] = NewValidationError()
-		errors.NestedErrors[tag].Parent = errors
-
-		field.Validate(errors.NestedErrors[tag])
+func (s Schema) Validate(ve *ValidationError, _ FieldTag) {
+	for tag, fieldOrSchema := range s {
+		if schema, ok := fieldOrSchema.(Schema); ok {
+			newVe := NewValidationError()
+			newVe.Parent = ve
+			ve.NestedErrors[tag] = newVe
+			schema.Validate(newVe, tag)
+		} else {
+			field := fieldOrSchema
+			field.Validate(ve, tag)
+		}
 	}
 }
 
 func (s Schema) Errors() *ValidationError {
 	errors := NewValidationError()
-	s.Validate(errors)
+	s.Validate(errors, "")
 	return errors
 }
 
 type Validable interface {
-	Validate(*ValidationError)
+	Validate(*ValidationError, FieldTag)
 	Errors() *ValidationError
 }

@@ -23,7 +23,7 @@ type NumericRule[T Numeric] = Rule[T]
 func MinS(n int) StringRule {
 	return func(fd FieldState[string]) error {
 		if len(fd.value) < n {
-			return fmt.Errorf("%s is %d long, but needs to be at least %d long", fd.tag, len(fd.value), n)
+			return fmt.Errorf("length is %d, but needs to be at least %d", len(fd.value), n)
 		}
 		return nil
 	}
@@ -33,7 +33,7 @@ func MinS(n int) StringRule {
 func MinN[T Numeric](n T) NumericRule[T] {
 	return func(fd FieldState[T]) error {
 		if fd.value < n {
-			return fmt.Errorf("%s is %v, but needs to be at least %v", fd.tag, fd.value, n)
+			return fmt.Errorf("value is %v, but needs to be at least %v", fd.value, n)
 		}
 		return nil
 	}
@@ -43,7 +43,7 @@ func MinN[T Numeric](n T) NumericRule[T] {
 func MaxS(n int) StringRule {
 	return func(fd FieldState[string]) error {
 		if len(fd.value) > n {
-			return fmt.Errorf("%s is %d long, but needs to be at most %d long", fd.tag, len(fd.value), n)
+			return fmt.Errorf("length is %d, but needs to be at most %d", len(fd.value), n)
 		}
 		return nil
 	}
@@ -53,7 +53,7 @@ func MaxS(n int) StringRule {
 func MaxN[T Numeric](n T) NumericRule[T] {
 	return func(fd FieldState[T]) error {
 		if fd.value > n {
-			return fmt.Errorf("%s is %v, but needs to be at most %v", fd.tag, fd.value, n)
+			return fmt.Errorf("value is %v, but needs to be at most %v", fd.value, n)
 		}
 		return nil
 	}
@@ -63,7 +63,7 @@ func MaxN[T Numeric](n T) NumericRule[T] {
 func NotZero[T comparable](fd FieldState[T]) error {
 	var zero T
 	if fd.value == zero {
-		return fmt.Errorf("%s is required but has zero value", fd.tag)
+		return fmt.Errorf("value is required but has zero value")
 	}
 	return nil
 }

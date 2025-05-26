@@ -17,11 +17,11 @@ func (re RuleError) Error() string {
 type RuleErrors = []RuleError
 
 // FieldsErrorMap represents many fields K with their V RuleErrors.
-type FieldsErrorMap = map[string]RuleErrors
+type FieldsErrorMap = map[FieldTag]RuleErrors
 
 // NestedErrorsMap represents the collection of fields under the current one,
 // and each of their validation errors
-type NestedErrorsMap = map[string]*ValidationError
+type NestedErrorsMap = map[FieldTag]*ValidationError
 
 // ValidationError represents the tree of nested validation errors in a field.
 type ValidationError struct {
@@ -30,16 +30,35 @@ type ValidationError struct {
 	Parent       *ValidationError
 }
 
-// MarshalJSON implements the json.Marshaler interface for ValidationError.
-// It creates a flattened JSON representation where field names are directly mapped
-// to their nested structure, with direct errors stored in an "errors" field.
-func (ve *ValidationError) MarshalJSON() ([]byte, error) {
-	errorMap := ve.ToMap()
-	if errorMap == nil {
-		return []byte("{}"), nil
+// Alias for brevity when returning from ValidationError.ToMap()
+type ToMapResult = map[FieldTag]map[string]any
+
+// Helper to avoid nil maps
+func NewValidationError() *ValidationError {
+	return &ValidationError{
+		Errors:       make(FieldsErrorMap),
+		NestedErrors: make(NestedErrorsMap),
+	}
+}
+
+// Adds an error to the ValidationError's top level Errors, stored against the field
+func (ve *ValidationError) AddError(tag FieldTag, err error) {
+	ve.Errors[tag] = append(ve.Errors[tag], RuleError(err.Error()))
+}
+
+// HasErrors returns true if there are any errors at any level, recursively.
+func (ve *ValidationError) HasErrors() bool {
+	if len(ve.Errors) > 0 {
+		return true
 	}
 
-	return json.Marshal(errorMap)
+	for _, nestedErr := range ve.NestedErrors {
+		if nestedErr.HasErrors() {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ToMap converts a ValidationError to a map representation.
@@ -50,16 +69,14 @@ func (ve *ValidationError) MarshalJSON() ([]byte, error) {
 // - Other keys: nested validation structures
 //
 // INFO: Does many recursive calls. maybe performance issues?
-func (ve *ValidationError) ToMap() map[string]map[string]any {
-	// recursive
+func (ve *ValidationError) ToMap() ToMapResult {
 	if !ve.HasErrors() {
 		return nil
 	}
 
-	result := make(map[string]map[string]any, len(ve.Errors)+len(ve.NestedErrors))
+	result := make(ToMapResult, len(ve.Errors)+len(ve.NestedErrors))
 
 	// Add direct field errors
-	// state 1: {"field1": {"errors": ["a validation error"]}}
 	for field, errors := range ve.Errors {
 		result[field] = map[string]any{
 			"errors": errors,
@@ -67,10 +84,6 @@ func (ve *ValidationError) ToMap() map[string]map[string]any {
 	}
 
 	// Add nested field errors
-	// state 2: {"field1": {
-	//             "errors": ["a validation error"],
-	//             "field2": {"errors": ["a validation error"]}
-	//           }}
 	for nestedField, nestedErr := range ve.NestedErrors {
 		if nestedErr.HasErrors() {
 			// recursive
@@ -87,7 +100,7 @@ func (ve *ValidationError) ToMap() map[string]map[string]any {
 			} else {
 				// No existing entry, add the nested map directly
 				// Copy all nested values since the type inference isn't smart enough to directly assign nestedMap
-				result[nestedField] = make(map[string]any)
+				result[nestedField] = make(map[FieldTag]any)
 				for k, v := range nestedMap {
 					result[nestedField][k] = v
 				}
@@ -98,39 +111,24 @@ func (ve *ValidationError) ToMap() map[string]map[string]any {
 	return result
 }
 
-// Helper to avoid nil maps
-func NewValidationError() *ValidationError {
-	return &ValidationError{
-		Errors:       make(FieldsErrorMap),
-		NestedErrors: make(map[string]*ValidationError),
+// MarshalJSON implements the json.Marshaler interface for ValidationError.
+// It creates a flattened JSON representation where field names are directly mapped
+// to their nested structure, with direct errors stored in an "errors" field.
+func (ve *ValidationError) MarshalJSON() ([]byte, error) {
+	errorMap := ve.ToMap()
+	if errorMap == nil {
+		return []byte("null"), nil
 	}
-}
 
-func (ve *ValidationError) AddError(field string, err error) {
-	ve.Errors[field] = append(ve.Errors[field], RuleError(err.Error()))
+	return json.Marshal(errorMap)
 }
 
 // GetOrCreateNested returns a nested ValidationError for a field, creating it if necessary.
-func (ve *ValidationError) GetOrCreateNested(field string) *ValidationError {
-	if _, exists := ve.NestedErrors[field]; !exists {
-		ve.NestedErrors[field] = NewValidationError()
+func (ve *ValidationError) GetOrCreateNested(tag FieldTag) *ValidationError {
+	if _, exists := ve.NestedErrors[tag]; !exists {
+		ve.NestedErrors[tag] = NewValidationError()
 	}
-	return ve.NestedErrors[field]
-}
-
-// HasErrors returns true if there are any errors at any level, recursively.
-func (ve *ValidationError) HasErrors() bool {
-	if len(ve.Errors) > 0 {
-		return true
-	}
-
-	for _, nestedErr := range ve.NestedErrors {
-		if nestedErr.HasErrors() {
-			return true
-		}
-	}
-
-	return false
+	return ve.NestedErrors[tag]
 }
 
 func (ve *ValidationError) Error() string {
