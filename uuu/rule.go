@@ -6,20 +6,27 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+// Numeric is a constraint that permits any numeric type: integer or float.
 type Numeric interface {
 	constraints.Float | constraints.Integer
 }
 
-// Rule is a generic validation rule for any type
+// Rule is a generic validation rule that takes a field state and returns an error if validation fails.
+// It is the fundamental building block of the validation system.
 type Rule[T any] = func(FieldState[T]) error
 
-// StringRule is for string-specific validation rules
+// StringRule is a specialised rule type for string validation.
 type StringRule = Rule[string]
 
-// NumericRule is for numeric validation rules
+// NumericRule is a specialised rule type for numeric validation.
 type NumericRule[T Numeric] = Rule[T]
 
-// MinS validates if a string is shorter than n characters
+// MinS validates if a string's length is at least n characters.
+//
+// Example:
+//
+//	// Validate that a name is at least 2 characters long
+//	nameField := u.Field("John", u.MinS(2))
 func MinS(n int) StringRule {
 	return func(fd FieldState[string]) error {
 		if len(fd.value) < n {
@@ -29,7 +36,12 @@ func MinS(n int) StringRule {
 	}
 }
 
-// MinN validates if a numeric value is less than n
+// MinN validates if a numeric value is at least n.
+//
+// Example:
+//
+//	// Validate that age is at least 18
+//	ageField := u.Field(25, u.MinN(18))
 func MinN[T Numeric](n T) NumericRule[T] {
 	return func(fd FieldState[T]) error {
 		if fd.value < n {
@@ -39,7 +51,12 @@ func MinN[T Numeric](n T) NumericRule[T] {
 	}
 }
 
-// MaxS validates if a string is no longer than n characters
+// MaxS validates if a string's length is at most n characters.
+//
+// Example:
+//
+//	// Validate that a username is at most 20 characters long
+//	usernameField := u.Field("john doe", u.MaxS(20))
 func MaxS(n int) StringRule {
 	return func(fd FieldState[string]) error {
 		if len(fd.value) > n {
@@ -49,7 +66,12 @@ func MaxS(n int) StringRule {
 	}
 }
 
-// MaxN validates if a numeric value is not greater than n
+// MaxN validates if a numeric value is at most n.
+//
+// Example:
+//
+//	// Validate that age is at most 120
+//	ageField := u.Field(25, u.MaxN(120))
 func MaxN[T Numeric](n T) NumericRule[T] {
 	return func(fd FieldState[T]) error {
 		if fd.value > n {
@@ -59,7 +81,16 @@ func MaxN[T Numeric](n T) NumericRule[T] {
 	}
 }
 
-// NotZero validates that a value is not the zero value for its type
+// NotZero validates that a value is not the zero value for its type.
+// This is useful for required fields.
+//
+// Example:
+//
+//	// Validate that email is not empty
+//	emailField := u.Field("user@example.com", u.NotZero)
+//
+//	// Works with any comparable type
+//	ageField := u.Field(25, u.NotZero)
 func NotZero[T comparable](fd FieldState[T]) error {
 	var zero T
 	if fd.value == zero {
