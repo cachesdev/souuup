@@ -40,7 +40,7 @@ func main() {
 	addr := Address{City: "London", Country: "UK"}
 
 	// Create a validator with the schema. You can also extract the schema definition, if you prefer.
-	validator := u.NewSouuup(u.Schema{
+	uuu := u.NewSouuup(u.Schema{
 		"username": u.Field(user.Name, u.MinS(3), u.MaxS(20)),
 		"age":      u.Field(user.Age, u.MinN(18), u.MaxN(120)),
 		"address": u.Schema{
@@ -50,7 +50,7 @@ func main() {
 	})
 
 	// Validate the data
-	err := validator.Validate()
+	err := uuu.Validate()
 	if err != nil {
 		fmt.Println("Validation failed:", err)
 		return
@@ -118,7 +118,7 @@ If you would like to create validators that you can reuse across multiple handle
 
 ```go
 func ValidateUser(user User) *u.Souuup {
-	validator := u.NewSouuup(u.Schema{
+	uuu := u.NewSouuup(u.Schema{
 		"username": u.Field(user.Name, u.MinS(3), u.MaxS(20)),
 		"age":      u.Field(user.Age, u.MinN(18), u.MaxN(120)),
 		"address": u.Schema{
@@ -127,7 +127,7 @@ func ValidateUser(user User) *u.Souuup {
 		},
 	})
 
-    return validator
+    return uuu
 ```
 
 ## License

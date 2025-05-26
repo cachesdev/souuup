@@ -199,10 +199,10 @@ func main() {
 	}
 
 	// Create validator
-	validator := u.NewSouuup(orderSchema)
+	uuu := u.NewSouuup(orderSchema)
 
 	// Validate order
-	err := validator.Validate()
+	err := uuu.Validate()
 	if err != nil {
 		fmt.Printf("Order validation failed: %s\n", err)
 		return
@@ -237,11 +237,11 @@ func main() {
 	}
 
 	// Create validator for invalid order
-	invalidValidator := u.NewSouuup(invalidOrderSchema)
+	invalid := u.NewSouuup(invalidOrderSchema)
 
 	// Validate invalid order
 	fmt.Println("\nValidating an invalid order...")
-	invalidErr := invalidValidator.Validate()
+	invalidErr := invalid.Validate()
 	if invalidErr != nil {
 		fmt.Printf("❌ Invalid order validation failed as expected: %s\n", invalidErr)
 		return

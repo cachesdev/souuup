@@ -70,10 +70,10 @@ func main() {
 	}
 
 	// Create validator
-	validator := u.NewSouuup(schema)
+	uuu := u.NewSouuup(schema)
 
 	// Validate data
-	err := validator.Validate()
+	err := uuu.Validate()
 	if err != nil {
 		fmt.Printf("Validation failed: %s\n", err)
 		return
@@ -107,10 +107,10 @@ func main() {
 	}
 
 	// Create validator
-	invalidValidator := u.NewSouuup(invalidSchema)
+	invalid := u.NewSouuup(invalidSchema)
 
 	// Validate data
-	invalidErr := invalidValidator.Validate()
+	invalidErr := invalid.Validate()
 	if invalidErr != nil {
 		fmt.Printf("❌ Invalid user validation failed as expected: %s\n", invalidErr)
 		return

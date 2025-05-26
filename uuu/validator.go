@@ -12,8 +12,8 @@
 //		"age":      u.Field(25, u.MinN(18)),
 //	}
 //
-//	validator := u.NewSouuup(schema)
-//	err := validator.Validate()
+//	uuu := u.NewSouuup(schema)
+//	err := uuu.Validate()
 //	if err != nil {
 //		fmt.Println("Validation failed:", err)
 //		return
@@ -58,7 +58,7 @@ type Souuup struct {
 //		"username": u.Field("johndoe", u.MinS(3)),
 //		"age":      u.Field(25, u.MinN(18)),
 //	}
-//	validator := u.NewSouuup(schema)
+//	uuu := u.NewSouuup(schema)
 func NewSouuup(schema Schema) *Souuup {
 	return &Souuup{
 		state:  &souuupState{NewValidationError()},
@@ -71,7 +71,7 @@ func NewSouuup(schema Schema) *Souuup {
 //
 // Example:
 //
-//	err := validator.Validate()
+//	err := uuu.Validate()
 //	if err != nil {
 //		fmt.Println("Validation failed:", err)
 //		return
