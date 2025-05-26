@@ -117,7 +117,7 @@ func (ve *ValidationError) ToMap() ToMapResult {
 func (ve *ValidationError) MarshalJSON() ([]byte, error) {
 	errorMap := ve.ToMap()
 	if errorMap == nil {
-		return []byte("{}"), nil
+		return []byte("null"), nil
 	}
 
 	return json.Marshal(errorMap)

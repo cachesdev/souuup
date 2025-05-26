@@ -30,16 +30,6 @@ func TestField_Field(t *testing.T) {
 }
 
 func TestField_Validate(t *testing.T) {
-	type testCase struct {
-		name          string
-		value         int
-		rules         []u.Rule[int]
-		tag           u.FieldTag
-		expectedError bool
-		errorField    string
-		errorMessages u.RuleErrors
-	}
-
 	// Helper function to create a rule that always returns an error
 	errorRule := func(msg string) u.Rule[int] {
 		return func(state u.FieldState[int]) error {
@@ -54,7 +44,15 @@ func TestField_Validate(t *testing.T) {
 		}
 	}
 
-	tests := []testCase{
+	tests := []struct {
+		name          string
+		value         int
+		rules         []u.Rule[int]
+		tag           u.FieldTag
+		expectedError bool
+		errorField    string
+		errorMessages u.RuleErrors
+	}{
 		{
 			name:          "passes validation with no rules",
 			value:         123,

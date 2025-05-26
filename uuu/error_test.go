@@ -195,12 +195,6 @@ func TestValidationError_ToMap(t *testing.T) {
 		}
 	})
 
-	type testCase struct {
-		name     string
-		setup    func() *u.ValidationError
-		expected u.ToMapResult
-	}
-
 	verifyMap := func(t *testing.T, result, expected u.ToMapResult) {
 		t.Helper()
 
@@ -209,7 +203,11 @@ func TestValidationError_ToMap(t *testing.T) {
 		}
 	}
 
-	tests := []testCase{
+	tests := []struct {
+		name     string
+		setup    func() *u.ValidationError
+		expected u.ToMapResult
+	}{
 		{
 			name: "direct field errors only",
 			setup: func() *u.ValidationError {
@@ -337,14 +335,7 @@ func TestValidationError_Error(t *testing.T) {
 		}
 	})
 
-	type testCase struct {
-		name     string
-		setup    func() *u.ValidationError
-		expected string
-		contains []string // Substrings that should be in the error message
-	}
-
-	verifyErrorString := func(t *testing.T, result string, tc testCase) {
+	verifyErrorString := func(t *testing.T, result string, expected string, contains []string) {
 		t.Helper()
 
 		var jsonObj map[string]any
@@ -353,20 +344,25 @@ func TestValidationError_Error(t *testing.T) {
 		}
 
 		// If expected is provided, check for an exact match
-		if tc.expected != "" && result != tc.expected {
-			t.Errorf("expected exact error %q, got %q", tc.expected, result)
+		if expected != "" && result != expected {
+			t.Errorf("expected exact error %q, got %q", expected, result)
 			return
 		}
 
 		// Else, check for substrings being contained in the result
-		for _, substr := range tc.contains {
+		for _, substr := range contains {
 			if !strings.Contains(result, substr) {
 				t.Errorf("expected error string to contain %q, but got %q", substr, result)
 			}
 		}
 	}
 
-	tests := []testCase{
+	tests := []struct {
+		name     string
+		setup    func() *u.ValidationError
+		expected string
+		contains []string // Substrings that should be in the error message
+	}{
 		{
 			name: "single direct error",
 			setup: func() *u.ValidationError {
@@ -460,7 +456,7 @@ func TestValidationError_Error(t *testing.T) {
 			result := ve.Error()
 
 			// Assert
-			verifyErrorString(t, result, tc)
+			verifyErrorString(t, result, tc.expected, tc.contains)
 		})
 	}
 }
