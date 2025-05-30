@@ -20,3 +20,6 @@ type StringRule = Rule[string]
 
 // NumericRule is a specialised rule type for numeric validation.
 type NumericRule[T Numeric] = Rule[T]
+
+// SliceRule is a specialised rule type for slice validation.
+type SliceRule[T any] = Rule[[]T]
