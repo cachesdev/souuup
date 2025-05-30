@@ -50,7 +50,7 @@ Feel free to modify these examples or create your own. The key patterns to follo
 1. Define your data structures
 2. Create validation rules specific to your use case
 3. Build a schema mapping field names to validatable fields
-4. Create a validator named `uuu` with your schema
+4. Create a validator named `s` with your schema
 5. Call `Validate()` to check for validation errors
 
 For more details, see the main README and package documentation.
