@@ -8,7 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	u "github.com/cachesdev/souuup/uuu"
+	"github.com/cachesdev/souuup/r"
+	"github.com/cachesdev/souuup/u"
 )
 
 // User represents a user registration request
@@ -22,7 +23,7 @@ type UserRegistration struct {
 
 // Custom validation rules
 func ValidEmail(fs u.FieldState[string]) error {
-	email := fs.Value()
+	email := fs.Value
 	if !strings.Contains(email, "@") {
 		return fmt.Errorf("must be a valid email address")
 	}
@@ -31,7 +32,7 @@ func ValidEmail(fs u.FieldState[string]) error {
 
 func PasswordMatchRule(reg UserRegistration) u.Rule[string] {
 	return func(fs u.FieldState[string]) error {
-		if fs.Value() != reg.ConfirmPassword {
+		if fs.Value != reg.ConfirmPassword {
 			return fmt.Errorf("passwords do not match")
 		}
 		return nil
@@ -39,7 +40,7 @@ func PasswordMatchRule(reg UserRegistration) u.Rule[string] {
 }
 
 func StrongPasswordRule(fs u.FieldState[string]) error {
-	password := fs.Value()
+	password := fs.Value
 
 	if len(password) < 8 {
 		return fmt.Errorf("password must be at least 8 characters long")
@@ -59,16 +60,16 @@ func StrongPasswordRule(fs u.FieldState[string]) error {
 }
 
 // Handler for user registration
-func registerHandler(w http.ResponseWriter, r *http.Request) {
+func registerHandler(w http.ResponseWriter, req *http.Request) {
 	// Only allow POST requests
-	if r.Method != http.MethodPost {
+	if req.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	// Parse the request body
 	var reg UserRegistration
-	err := json.NewDecoder(r.Body).Decode(&reg)
+	err := json.NewDecoder(req.Body).Decode(&reg)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -76,10 +77,10 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create validation schema
 	schema := u.Schema{
-		"username": u.Field(reg.Username, u.NotZero, u.MinS(3), u.MaxS(20)),
-		"email":    u.Field(reg.Email, u.NotZero, ValidEmail),
-		"password": u.Field(reg.Password, u.NotZero, StrongPasswordRule, PasswordMatchRule(reg)),
-		"age":      u.Field(reg.Age, u.MinN(18)),
+		"username": u.Field(reg.Username, r.NotZero, r.MinS(3), r.MaxS(20)),
+		"email":    u.Field(reg.Email, r.NotZero, ValidEmail),
+		"password": u.Field(reg.Password, r.NotZero, StrongPasswordRule, PasswordMatchRule(reg)),
+		"age":      u.Field(reg.Age, r.MinN(18)),
 	}
 
 	// Create validator
@@ -90,7 +91,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		// Return validation errors as JSON
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"success": false,
 			"message": "Validation failed",
 			"errors":  err.(*u.ValidationError).ToMap(),
@@ -102,7 +103,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	// (in a real app, this would save the user to a database)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "User registered successfully",
 	})

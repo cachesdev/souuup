@@ -1,25 +1,16 @@
-package u
+package r
 
 import (
 	"fmt"
 
-	"golang.org/x/exp/constraints"
+	"github.com/cachesdev/souuup/u"
 )
 
-// Numeric is a constraint that permits any numeric type: integer or float.
-type Numeric interface {
-	constraints.Float | constraints.Integer
-}
-
-// Rule is a generic validation rule that takes a field state and returns an error if validation fails.
-// It is the fundamental building block of the validation system.
-type Rule[T any] = func(FieldState[T]) error
-
 // StringRule is a specialised rule type for string validation.
-type StringRule = Rule[string]
+type StringRule = u.Rule[string]
 
 // NumericRule is a specialised rule type for numeric validation.
-type NumericRule[T Numeric] = Rule[T]
+type NumericRule[T u.Numeric] = u.Rule[T]
 
 // MinS validates if a string's length is at least n characters.
 //
@@ -28,9 +19,9 @@ type NumericRule[T Numeric] = Rule[T]
 //	// Validate that a name is at least 2 characters long
 //	nameField := u.Field("John", u.MinS(2))
 func MinS(n int) StringRule {
-	return func(fd FieldState[string]) error {
-		if len(fd.value) < n {
-			return fmt.Errorf("length is %d, but needs to be at least %d", len(fd.value), n)
+	return func(fd u.FieldState[string]) error {
+		if len(fd.Value) < n {
+			return fmt.Errorf("length is %d, but needs to be at least %d", len(fd.Value), n)
 		}
 		return nil
 	}
@@ -42,10 +33,10 @@ func MinS(n int) StringRule {
 //
 //	// Validate that age is at least 18
 //	ageField := u.Field(25, u.MinN(18))
-func MinN[T Numeric](n T) NumericRule[T] {
-	return func(fd FieldState[T]) error {
-		if fd.value < n {
-			return fmt.Errorf("value is %v, but needs to be at least %v", fd.value, n)
+func MinN[T u.Numeric](n T) NumericRule[T] {
+	return func(fd u.FieldState[T]) error {
+		if fd.Value < n {
+			return fmt.Errorf("value is %v, but needs to be at least %v", fd.Value, n)
 		}
 		return nil
 	}
@@ -58,9 +49,9 @@ func MinN[T Numeric](n T) NumericRule[T] {
 //	// Validate that a username is at most 20 characters long
 //	usernameField := u.Field("john doe", u.MaxS(20))
 func MaxS(n int) StringRule {
-	return func(fd FieldState[string]) error {
-		if len(fd.value) > n {
-			return fmt.Errorf("length is %d, but needs to be at most %d", len(fd.value), n)
+	return func(fd u.FieldState[string]) error {
+		if len(fd.Value) > n {
+			return fmt.Errorf("length is %d, but needs to be at most %d", len(fd.Value), n)
 		}
 		return nil
 	}
@@ -72,10 +63,10 @@ func MaxS(n int) StringRule {
 //
 //	// Validate that age is at most 120
 //	ageField := u.Field(25, u.MaxN(120))
-func MaxN[T Numeric](n T) NumericRule[T] {
-	return func(fd FieldState[T]) error {
-		if fd.value > n {
-			return fmt.Errorf("value is %v, but needs to be at most %v", fd.value, n)
+func MaxN[T u.Numeric](n T) NumericRule[T] {
+	return func(fd u.FieldState[T]) error {
+		if fd.Value > n {
+			return fmt.Errorf("value is %v, but needs to be at most %v", fd.Value, n)
 		}
 		return nil
 	}
@@ -91,9 +82,9 @@ func MaxN[T Numeric](n T) NumericRule[T] {
 //
 //	// Works with any comparable type
 //	ageField := u.Field(25, u.NotZero)
-func NotZero[T comparable](fd FieldState[T]) error {
+func NotZero[T comparable](fd u.FieldState[T]) error {
 	var zero T
-	if fd.value == zero {
+	if fd.Value == zero {
 		return fmt.Errorf("value is required but has zero value")
 	}
 	return nil

@@ -1,6 +1,6 @@
 # Souuup
 
-A robust, type-safe validation library for Go. In any good soup, you need the right balance of ingredients; not too much or too little. Souuup helps you ensure your data has just the right shape and properties, so it too can be tasty.
+A robust, type-safe validation library for Go. In any good soup, you need the right ingredients. Souuup helps you ensure your data has just the right shape and properties, in a type safe way.
 
 ## Overview
 
@@ -11,7 +11,7 @@ Souuup is a flexible validation framework that lets you easily validate complex 
 - 🔍 **Type-safe validation** - Uses generics for compile-time type checking
 - 🧩 **Composable rules** - Mix and match validation rules for your specific needs
 - 🌳 **Nested validation** - Validate complex, nested data structures
-- 🚦 **Detailed error reporting** - Get comprehensive error messages with exact locations
+- 🚦 **Detailed error reporting** - Get comprehensive error messages with the same shape as your schema
 
 ## Quick Start
 
@@ -21,10 +21,10 @@ package main
 import (
     "fmt"
 
-    u "github.com/cachesdev/souuup/uuu"
+    "github.com/cachesdev/souuup/u"
+    "github.com/cachesdev/souuup/r"
 )
 
-// These would be types from your HTTP handler, or database, etc
 type User struct {
 	Name string
 	Age  int
@@ -39,18 +39,18 @@ func main() {
 	user := User{Name: "John Smith", Age: 27}
 	addr := Address{City: "London", Country: "UK"}
 
-	// Create a validator with the schema. You can also extract the schema definition, if you prefer.
-	uuu := u.NewSouuup(u.Schema{
-		"username": u.Field(user.Name, u.MinS(3), u.MaxS(20)),
-		"age":      u.Field(user.Age, u.MinN(18), u.MaxN(120)),
+	// Create a validator with the schema or extract the schema definition, if you prefer.
+	s := u.NewSouuup(u.Schema{
+		"username": u.Field(user.Name, r.MinS(3), r.MaxS(20)),
+		"age":      u.Field(user.Age, r.MinN(18), r.MaxN(120)),
 		"address": u.Schema{
-			"city":    u.Field(addr.City, u.MinS(2)),
-			"country": u.Field(addr.Country, u.NotZero),
+			"city":    u.Field(addr.City, r.MinS(2)),
+			"country": u.Field(addr.Country, r.NotZero),
 		},
 	})
 
 	// Validate the data
-	err := uuu.Validate()
+	err := s.Validate()
 	if err != nil {
 		fmt.Println("Validation failed:", err)
 		return
@@ -64,7 +64,7 @@ func main() {
 
 Souuup provides detailed error information, making it easy to identify exactly which fields failed validation and why:
 
-```go
+```json
 // Example of validation error output (JSON)
 {
     "username": {
@@ -85,7 +85,7 @@ You can easily create custom validation rules:
 ```go
 // Create a custom rule for email validation
 emailRule := func(fd u.FieldState[string]) error {
-    if !strings.Contains(fd.value, "@") {
+    if !strings.Contains(fd.Value, "@") {
         return fmt.Errorf("must be a valid email address")
     }
     return nil
@@ -101,8 +101,8 @@ u.Field("user@example.com", emailRule)
 userSchema := u.Schema{
     "profile": u.Schema{
         "personal": u.Schema{
-            "firstName": u.Field("John", u.MinS(2)),
-            "lastName":  u.Field("Doe", u.MinS(2)),
+            "firstName": u.Field("John", r.MinS(2)),
+            "lastName":  u.Field("Doe", r.MinS(2)),
         },
         "contact": u.Schema{
             "email": u.Field("john.doe@example.com"),
@@ -114,20 +114,50 @@ userSchema := u.Schema{
 
 ### Reusable Validators
 
-If you would like to create validators that you can reuse across multiple handlers, you can create a wrapper function and provide it to your handlers
+If you would like to create validators that you can reuse, you can create wrappers or methods and provide it where needed:
 
 ```go
-func ValidateUser(user User) *u.Souuup {
-	uuu := u.NewSouuup(u.Schema{
-		"username": u.Field(user.Name, u.MinS(3), u.MaxS(20)),
-		"age":      u.Field(user.Age, u.MinN(18), u.MaxN(120)),
+type Address struct {
+	City string
+	Country string
+}
+
+type User struct {
+	Name string
+	Age int
+	Address Address
+}
+func (user User) Validate() error {
+	s := u.NewSouuup(u.Schema{
+		"username": u.Field(user.Name, r.MinS(3), r.MaxS(20)),
+		"age":      u.Field(user.Age, r.MinN(18), r.MaxN(120)),
 		"address": u.Schema{
-			"city":    u.Field(addr.City, u.MinS(2)),
-			"country": u.Field(addr.Country, u.NotZero),
+			"city":    u.Field(user.Address.City, r.MinS(2)),
+			"country": u.Field(user.Address.Country, r.NotZero),
 		},
 	})
 
-    return uuu
+    return s.Validate()
+}
+
+func main() {
+	user := User{
+		Name: "Juan",
+		Age: 25,
+		Address: Address{
+			City: "London",
+		}
+	}
+
+	err := user.Validate()
+	fmt.Println(err)
+	//{
+	//  "address": {
+	//    "country": {
+	//        "errors": ["field country cannot be empty"]
+	//    }
+	//  }
+	//}
 ```
 
 ## License

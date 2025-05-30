@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	u "github.com/cachesdev/souuup/uuu"
+	"github.com/cachesdev/souuup/r"
+	"github.com/cachesdev/souuup/u"
 )
 
 // Complex data structures for validation
@@ -48,14 +49,14 @@ type PaymentInfo struct {
 
 // Custom validation rules
 func FutureDate(fs u.FieldState[time.Time]) error {
-	if fs.Value().Before(time.Now()) {
+	if fs.Value.Before(time.Now()) {
 		return fmt.Errorf("date must be in the future")
 	}
 	return nil
 }
 
 func PastDate(fs u.FieldState[time.Time]) error {
-	if fs.Value().After(time.Now()) {
+	if fs.Value.After(time.Now()) {
 		return fmt.Errorf("date must be in the past")
 	}
 	return nil
@@ -86,7 +87,7 @@ func ValidPaymentMethod(fs u.FieldState[string]) error {
 		"bank_transfer": true,
 	}
 
-	if !validMethods[fs.Value()] {
+	if !validMethods[fs.Value] {
 		return fmt.Errorf("invalid payment method: must be one of credit_card, debit_card, paypal, or bank_transfer")
 	}
 
@@ -142,34 +143,34 @@ func main() {
 
 	// Create complex nested validation schema
 	orderSchema := u.Schema{
-		"orderID":    u.Field(order.OrderID, u.NotZero, u.MinS(5)),
-		"customerID": u.Field(order.CustomerID, u.NotZero),
+		"orderID":    u.Field(order.OrderID, r.NotZero, r.MinS(5)),
+		"customerID": u.Field(order.CustomerID, r.NotZero),
 		"orderDate":  u.Field(order.OrderDate, PastDate),
 		"shipDate":   u.Field(*order.ShipDate, FutureDate),
 		"items": u.Schema{
-			"count": u.Field(len(order.Items), u.MinN(1)),
+			"count": u.Field(len(order.Items), r.MinN(1)),
 			"item0": u.Schema{
-				"productID": u.Field(order.Items[0].ProductID, u.NotZero),
-				"quantity":  u.Field(order.Items[0].Quantity, u.MinN(1)),
-				"unitPrice": u.Field(order.Items[0].UnitPrice, u.MinN(0.01)),
+				"productID": u.Field(order.Items[0].ProductID, r.NotZero),
+				"quantity":  u.Field(order.Items[0].Quantity, r.MinN(1)),
+				"unitPrice": u.Field(order.Items[0].UnitPrice, r.MinN(0.01)),
 			},
 			"item1": u.Schema{
-				"productID": u.Field(order.Items[1].ProductID, u.NotZero),
-				"quantity":  u.Field(order.Items[1].Quantity, u.MinN(1)),
-				"unitPrice": u.Field(order.Items[1].UnitPrice, u.MinN(0.01)),
+				"productID": u.Field(order.Items[1].ProductID, r.NotZero),
+				"quantity":  u.Field(order.Items[1].Quantity, r.MinN(1)),
+				"unitPrice": u.Field(order.Items[1].UnitPrice, r.MinN(0.01)),
 			},
 		},
 		"shippingInfo": u.Schema{
-			"street":     u.Field(order.ShippingInfo.Street, u.NotZero, u.MinS(5)),
-			"city":       u.Field(order.ShippingInfo.City, u.NotZero, u.MinS(2)),
-			"state":      u.Field(order.ShippingInfo.State, u.NotZero, u.MinS(2)),
-			"country":    u.Field(order.ShippingInfo.Country, u.NotZero, u.MinS(2)),
-			"postalCode": u.Field(order.ShippingInfo.PostalCode, u.NotZero),
+			"street":     u.Field(order.ShippingInfo.Street, r.NotZero, r.MinS(5)),
+			"city":       u.Field(order.ShippingInfo.City, r.NotZero, r.MinS(2)),
+			"state":      u.Field(order.ShippingInfo.State, r.NotZero, r.MinS(2)),
+			"country":    u.Field(order.ShippingInfo.Country, r.NotZero, r.MinS(2)),
+			"postalCode": u.Field(order.ShippingInfo.PostalCode, r.NotZero),
 		},
 		"paymentInfo": u.Schema{
 			"method": u.Field(order.PaymentInfo.Method, ValidPaymentMethod),
-			"cardLastFour": u.Field(order.PaymentInfo.CardLastFour, u.NotZero, func(fs u.FieldState[string]) error {
-				if len(fs.Value()) != 4 {
+			"cardLastFour": u.Field(order.PaymentInfo.CardLastFour, r.NotZero, func(fs u.FieldState[string]) error {
+				if len(fs.Value) != 4 {
 					return fmt.Errorf("card last four must be exactly 4 digits")
 				}
 				return nil
@@ -181,7 +182,7 @@ func main() {
 				return nil
 			}),
 		},
-		"totalAmount": u.Field(order.TotalAmount, u.MinN(0.0)),
+		"totalAmount": u.Field(order.TotalAmount, r.MinN(0.0)),
 		"status": u.Field(order.Status, func(fs u.FieldState[string]) error {
 			validStatuses := map[string]bool{
 				"pending":    true,
@@ -191,7 +192,7 @@ func main() {
 				"cancelled":  true,
 			}
 
-			if !validStatuses[fs.Value()] {
+			if !validStatuses[fs.Value] {
 				return fmt.Errorf("invalid status")
 			}
 			return nil
@@ -219,16 +220,16 @@ func main() {
 
 	// Create validation schema for invalid order
 	invalidOrderSchema := u.Schema{
-		"orderID":    u.Field(invalidOrder.OrderID, u.NotZero, u.MinS(5)),
-		"customerID": u.Field(invalidOrder.CustomerID, u.NotZero),
+		"orderID":    u.Field(invalidOrder.OrderID, r.NotZero, r.MinS(5)),
+		"customerID": u.Field(invalidOrder.CustomerID, r.NotZero),
 		"orderDate":  u.Field(invalidOrder.OrderDate, PastDate),
 		"shipDate":   u.Field(*invalidOrder.ShipDate, FutureDate),
 		"items": u.Schema{
-			"count": u.Field(len(invalidOrder.Items), u.MinN(1)),
+			"count": u.Field(len(invalidOrder.Items), r.MinN(1)),
 			"item0": u.Schema{
-				"productID": u.Field(invalidOrder.Items[0].ProductID, u.NotZero),
-				"quantity":  u.Field(invalidOrder.Items[0].Quantity, u.MinN(1)),
-				"unitPrice": u.Field(invalidOrder.Items[0].UnitPrice, u.MinN(0.01)),
+				"productID": u.Field(invalidOrder.Items[0].ProductID, r.NotZero),
+				"quantity":  u.Field(invalidOrder.Items[0].Quantity, r.MinN(1)),
+				"unitPrice": u.Field(invalidOrder.Items[0].UnitPrice, r.MinN(0.01)),
 			},
 		},
 		"paymentInfo": u.Schema{

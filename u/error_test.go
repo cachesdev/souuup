@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	u "github.com/cachesdev/souuup/uuu"
+	"github.com/cachesdev/souuup/u"
 )
 
 func TestValidationError_NewValidationError(t *testing.T) {

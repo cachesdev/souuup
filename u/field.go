@@ -3,14 +3,8 @@ package u
 // FieldState holds the value being validated and any validation errors.
 // It is passed to validation rules to provide access to the value.
 type FieldState[T any] struct {
-	value  T
+	Value  T
 	errors *ValidationError
-}
-
-// Value returns the value being validated.
-// This method provides access to the unexported value field.
-func (fs FieldState[T]) Value() T {
-	return fs.value
 }
 
 // FieldDef represents a field with its value and validation rules.
@@ -35,7 +29,7 @@ var _ Validable = (*FieldDef[any])(nil)
 //
 //	// Validate using a custom rule
 //	emailField := u.Field("user@example.com", func(fs u.FieldState[string]) error {
-//		if !strings.Contains(fs.Value(), "@") {
+//		if !strings.Contains(fs.Value, "@") {
 //			return fmt.Errorf("invalid email format")
 //		}
 //		return nil
@@ -43,7 +37,7 @@ var _ Validable = (*FieldDef[any])(nil)
 func Field[T any](value T, rules ...Rule[T]) *FieldDef[T] {
 	return &FieldDef[T]{
 		state: FieldState[T]{
-			value: value,
+			Value: value,
 		},
 		rules: rules,
 	}

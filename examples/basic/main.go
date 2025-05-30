@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"strings"
 
-	u "github.com/cachesdev/souuup/uuu"
+	"github.com/cachesdev/souuup/r"
+	"github.com/cachesdev/souuup/u"
 )
 
 // Custom email validation rule
 func EmailRule(fs u.FieldState[string]) error {
 	// Use the Value() method to access the field value
-	email := fs.Value()
+	email := fs.Value
 	if !strings.Contains(email, "@") {
 		return fmt.Errorf("must be a valid email address")
 	}
@@ -56,17 +57,17 @@ func main() {
 
 	// Create a validation schema for the user
 	schema := u.Schema{
-		"username": u.Field(user.Username, u.MinS(3), u.MaxS(20)),
-		"email":    u.Field(user.Email, u.NotZero, EmailRule),
-		"age":      u.Field(user.Age, u.MinN(18), u.MaxN(120)),
+		"username": u.Field(user.Username, r.MinS(3), r.MaxS(20)),
+		"email":    u.Field(user.Email, r.NotZero, EmailRule),
+		"age":      u.Field(user.Age, r.MinN(18), r.MaxN(120)),
 		"isActive": u.Field(user.IsActive),
 		"address": u.Schema{
-			"street":  u.Field(user.Address.Street, u.NotZero, u.MinS(5)),
-			"city":    u.Field(user.Address.City, u.NotZero, u.MinS(2)),
-			"country": u.Field(user.Address.Country, u.NotZero, u.MinS(2)),
-			"zipCode": u.Field(user.Address.ZipCode, u.NotZero),
+			"street":  u.Field(user.Address.Street, r.NotZero, r.MinS(5)),
+			"city":    u.Field(user.Address.City, r.NotZero, r.MinS(2)),
+			"country": u.Field(user.Address.Country, r.NotZero, r.MinS(2)),
+			"zipCode": u.Field(user.Address.ZipCode, r.NotZero),
 		},
-		"interests": u.Field(len(user.Interests), u.MinN(1)), // Validate array length
+		"interests": u.Field(len(user.Interests), r.MinN(1)), // Validate array length
 	}
 
 	// Create validator
@@ -96,13 +97,13 @@ func main() {
 
 	// Create a validation schema for the invalid user
 	invalidSchema := u.Schema{
-		"username": u.Field(invalidUser.Username, u.MinS(3), u.MaxS(20)),
-		"email":    u.Field(invalidUser.Email, u.NotZero, EmailRule),
-		"age":      u.Field(invalidUser.Age, u.MinN(18), u.MaxN(120)),
+		"username": u.Field(invalidUser.Username, r.MinS(3), r.MaxS(20)),
+		"email":    u.Field(invalidUser.Email, r.NotZero, EmailRule),
+		"age":      u.Field(invalidUser.Age, r.MinN(18), r.MaxN(120)),
 		"address": u.Schema{
-			"street":  u.Field(invalidUser.Address.Street, u.NotZero, u.MinS(5)),
-			"city":    u.Field(invalidUser.Address.City, u.NotZero, u.MinS(2)),
-			"country": u.Field(invalidUser.Address.Country, u.NotZero, u.MinS(2)),
+			"street":  u.Field(invalidUser.Address.Street, r.NotZero, r.MinS(5)),
+			"city":    u.Field(invalidUser.Address.City, r.NotZero, r.MinS(2)),
+			"country": u.Field(invalidUser.Address.Country, r.NotZero, r.MinS(2)),
 		},
 	}
 
