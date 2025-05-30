@@ -3,6 +3,7 @@ package r
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/cachesdev/souuup/u"
 )
@@ -77,6 +78,21 @@ func NotInS(set []string) u.StringRule {
 	return func(fs u.FieldState[string]) error {
 		if slices.Contains(set, fs.Value) {
 			return fmt.Errorf("%q is in %v, but shouldn't be", fs.Value, set)
+		}
+		return nil
+	}
+}
+
+// Contains validates if a string contains a substring
+//
+// Example:
+//
+//	// Validate that an address contains "Street"
+//	addrField := u.Field("123 London Street", r.Contains("Street"))
+func Contains(substr string) u.StringRule {
+	return func(fs u.FieldState[string]) error {
+		if strings.Contains(fs.Value, substr) {
+			return fmt.Errorf("%q does not contain %q, but needs to", fs.Value, substr)
 		}
 		return nil
 	}
