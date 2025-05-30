@@ -129,13 +129,13 @@ func None[T any](rule u.Rule[T]) u.SliceRule[T] {
 	}
 }
 
-// MinLength validates that a slice has at least n elements.
+// MinLen validates that a slice has at least n elements.
 //
 // Example:
 //
 //	// Validate that a user has at least one interest
-//	interestsField := u.Field(user.Interests, r.MinLength(1))
-func MinLength[T any](n int) u.SliceRule[T] {
+//	interestsField := u.Field(user.Interests, r.MinLen(1))
+func MinLen[T any](n int) u.SliceRule[T] {
 	return func(fs u.FieldState[[]T]) error {
 		length := len(fs.Value)
 		if length < n {
@@ -145,13 +145,13 @@ func MinLength[T any](n int) u.SliceRule[T] {
 	}
 }
 
-// MaxLength validates that a slice has at most n elements.
+// MaxLen validates that a slice has at most n elements.
 //
 // Example:
 //
 //	// Validate that a user has at most 5 interests
-//	interestsField := u.Field(user.Interests, r.MaxLength(5))
-func MaxLength[T any](n int) u.SliceRule[T] {
+//	interestsField := u.Field(user.Interests, r.MaxLen(5))
+func MaxLen[T any](n int) u.SliceRule[T] {
 	return func(fs u.FieldState[[]T]) error {
 		length := len(fs.Value)
 		if length > n {
@@ -161,13 +161,13 @@ func MaxLength[T any](n int) u.SliceRule[T] {
 	}
 }
 
-// ExactLength validates that a slice has exactly n elements.
+// ExactLen validates that a slice has exactly n elements.
 //
 // Example:
 //
 //	// Validate that a team has exactly 5 members
-//	teamMembersField := u.Field(team.Members, r.ExactLength(5))
-func ExactLength[T any](n int) u.SliceRule[T] {
+//	teamMembersField := u.Field(team.Members, r.ExactLen(5))
+func ExactLen[T any](n int) u.SliceRule[T] {
 	return func(fs u.FieldState[[]T]) error {
 		length := len(fs.Value)
 		if length != n {

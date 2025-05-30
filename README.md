@@ -49,7 +49,7 @@ func main() {
 		"username": u.Field(user.Name, r.MinS(3), r.MaxS(20)),
 		"age":      u.Field(user.Age, r.MinN(18), r.MaxN(120)),
 				"interests": u.Field(user.Interests,
-			u.MinLength[string](1),    // At least one interest required
+			u.MinLen[string](1),    // At least one interest required
 			u.Every(u.MinS(3)),        // Each interest must be at least 3 characters
 		),
 		"address": u.Schema{
@@ -148,7 +148,7 @@ func (user User) Validate() error {
 		"username": u.Field(user.Name, r.MinS(3), r.MaxS(20)),
 		"age":      u.Field(user.Age, r.MinN(18), r.MaxN(120)),
 		"interests": u.Field(user.Interests,
-            u.MinLength[string](1),
+            u.MinLen[string](1),
             u.Every(u.MinS(3)),
         ),
 		"address": u.Schema{

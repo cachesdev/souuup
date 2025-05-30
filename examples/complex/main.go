@@ -161,8 +161,8 @@ func main() {
 		"orderDate":  u.Field(order.OrderDate, PastDate),
 		"shipDate":   u.Field(*order.ShipDate, FutureDate),
 		"items": u.Field(order.Items,
-			r.MinLength[OrderItem](1),      // At least one item required
-			r.MaxLength[OrderItem](10),     // Maximum 10 items allowed
+			r.MinLen[OrderItem](1),         // At least one item required
+			r.MaxLen[OrderItem](10),        // Maximum 10 items allowed
 			r.Some(HasMinimumValue(100.0)), // At least one item must be worth $100 or more,
 		),
 		"shippingInfo": u.Schema{
