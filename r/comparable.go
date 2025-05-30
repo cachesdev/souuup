@@ -12,14 +12,30 @@ import (
 // Example:
 //
 //	// Validate that email is not empty
-//	emailField := u.Field("user@example.com", u.NotZero)
+//	emailField := u.Field("user@example.com", r.NotZero)
 //
 //	// Works with any comparable type
 //	ageField := u.Field(25, r.NotZero)
-func NotZero[T comparable](fd u.FieldState[T]) error {
+func NotZero[T comparable](fs u.FieldState[T]) error {
 	var zero T
-	if fd.Value == zero {
+	if fs.Value == zero {
 		return fmt.Errorf("value is required but has zero value")
 	}
 	return nil
+}
+
+// SameAs validates that a value is the same as another value of its type.
+// This is useful for password/email confirmations.
+//
+// Example:
+//
+//	// Validate that passwords match
+//	passwordField := u.Field(password, r.SameAs(confirmPassword))
+func SameAs[T comparable](other T) u.Rule[T] {
+	return func(fs u.FieldState[T]) error {
+		if fs.Value != other {
+			return fmt.Errorf("%v does not match %v", fs.Value, other)
+		}
+		return nil
+	}
 }
