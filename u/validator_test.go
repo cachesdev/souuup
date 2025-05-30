@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	u "github.com/cachesdev/souuup/uuu"
+	"github.com/cachesdev/souuup/u"
 )
 
 func TestSchema_Validate(t *testing.T) {

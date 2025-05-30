@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	u "github.com/cachesdev/souuup/uuu"
+	"github.com/cachesdev/souuup/u"
 )
 
 func TestField_Field(t *testing.T) {
