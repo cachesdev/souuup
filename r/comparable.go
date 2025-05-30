@@ -15,7 +15,7 @@ import (
 //	emailField := u.Field("user@example.com", u.NotZero)
 //
 //	// Works with any comparable type
-//	ageField := u.Field(25, u.NotZero)
+//	ageField := u.Field(25, r.NotZero)
 func NotZero[T comparable](fd u.FieldState[T]) error {
 	var zero T
 	if fd.Value == zero {

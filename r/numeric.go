@@ -11,7 +11,7 @@ import (
 // Example:
 //
 //	// Validate that age is at least 18
-//	ageField := u.Field(25, u.MinN(18))
+//	ageField := u.Field(25, r.MinN(18))
 func MinN[T u.Numeric](n T) u.NumericRule[T] {
 	return func(fd u.FieldState[T]) error {
 		if fd.Value < n {
@@ -26,7 +26,7 @@ func MinN[T u.Numeric](n T) u.NumericRule[T] {
 // Example:
 //
 //	// Validate that age is at most 120
-//	ageField := u.Field(25, u.MaxN(120))
+//	ageField := u.Field(25, r.MaxN(120))
 func MaxN[T u.Numeric](n T) u.NumericRule[T] {
 	return func(fd u.FieldState[T]) error {
 		if fd.Value > n {
