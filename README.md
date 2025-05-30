@@ -28,6 +28,7 @@ import (
 type User struct {
 	Name string
 	Age  int
+	Interests []string
 }
 
 type Address struct {
@@ -36,13 +37,21 @@ type Address struct {
 }
 
 func main() {
-	user := User{Name: "John Smith", Age: 27}
+	user := User{
+		Name: "John Smith",
+		Age: 27,
+		Interests: []string{"reading", "cycling", "photography"},
+	}
 	addr := Address{City: "London", Country: "UK"}
 
 	// Create a validator with the schema or extract the schema definition, if you prefer.
 	s := u.NewSouuup(u.Schema{
 		"username": u.Field(user.Name, r.MinS(3), r.MaxS(20)),
 		"age":      u.Field(user.Age, r.MinN(18), r.MaxN(120)),
+				"interests": u.Field(user.Interests,
+			u.MinLength[string](1),    // At least one interest required
+			u.Every(u.MinS(3)),        // Each interest must be at least 3 characters
+		),
 		"address": u.Schema{
 			"city":    u.Field(addr.City, r.MinS(2)),
 			"country": u.Field(addr.Country, r.NotZero),
@@ -67,14 +76,20 @@ Souuup provides detailed error information, making it easy to identify exactly w
 ```json
 // Example of validation error output (JSON)
 {
-    "username": {
-        "errors": ["length is 2, but needs to be at least 3"]
-    },
-    "address": {
-        "city": {
-            "errors": ["length is 1, but needs to be at least 2"]
-        }
+  "username": {
+    "errors": ["length is 2, but needs to be at least 3"]
+  },
+  "interests": {
+    "errors": ["2 elements failed validation
+      [0]: length is 1, but needs to be at least 3
+      [1]: length is 2, but needs to be at least 3"]
     }
+  }
+  "address": {
+    "city": {
+      "errors": ["length is 1, but needs to be at least 2"]
+    }
+  }
 }
 ```
 
@@ -125,12 +140,17 @@ type Address struct {
 type User struct {
 	Name string
 	Age int
+	Interests []string
 	Address Address
 }
 func (user User) Validate() error {
 	s := u.NewSouuup(u.Schema{
 		"username": u.Field(user.Name, r.MinS(3), r.MaxS(20)),
 		"age":      u.Field(user.Age, r.MinN(18), r.MaxN(120)),
+		"interests": u.Field(user.Interests,
+            u.MinLength[string](1),
+            u.Every(u.MinS(3)),
+        ),
 		"address": u.Schema{
 			"city":    u.Field(user.Address.City, r.MinS(2)),
 			"country": u.Field(user.Address.Country, r.NotZero),

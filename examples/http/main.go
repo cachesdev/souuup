@@ -84,10 +84,10 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Create validator
-	uuu := u.NewSouuup(schema)
+	s := u.NewSouuup(schema)
 
 	// Validate
-	if err := uuu.Validate(); err != nil {
+	if err := s.Validate(); err != nil {
 		// Return validation errors as JSON
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)

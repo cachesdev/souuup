@@ -94,6 +94,19 @@ func ValidPaymentMethod(fs u.FieldState[string]) error {
 	return nil
 }
 
+func HasMinimumValue(minValue float64) u.Rule[OrderItem] {
+	return func(fs u.FieldState[OrderItem]) error {
+		item := fs.Value
+		totalValue := item.UnitPrice*float64(item.Quantity) - item.Discount
+
+		if totalValue < minValue {
+			return fmt.Errorf("total item value (%.2f) is below minimum threshold of %.2f", totalValue, minValue)
+		}
+
+		return nil
+	}
+}
+
 func main() {
 	fmt.Println("Complex Validation Example")
 	fmt.Println("=========================")
@@ -147,19 +160,11 @@ func main() {
 		"customerID": u.Field(order.CustomerID, r.NotZero),
 		"orderDate":  u.Field(order.OrderDate, PastDate),
 		"shipDate":   u.Field(*order.ShipDate, FutureDate),
-		"items": u.Schema{
-			"count": u.Field(len(order.Items), r.MinN(1)),
-			"item0": u.Schema{
-				"productID": u.Field(order.Items[0].ProductID, r.NotZero),
-				"quantity":  u.Field(order.Items[0].Quantity, r.MinN(1)),
-				"unitPrice": u.Field(order.Items[0].UnitPrice, r.MinN(0.01)),
-			},
-			"item1": u.Schema{
-				"productID": u.Field(order.Items[1].ProductID, r.NotZero),
-				"quantity":  u.Field(order.Items[1].Quantity, r.MinN(1)),
-				"unitPrice": u.Field(order.Items[1].UnitPrice, r.MinN(0.01)),
-			},
-		},
+		"items": u.Field(order.Items,
+			r.MinLength[OrderItem](1),      // At least one item required
+			r.MaxLength[OrderItem](10),     // Maximum 10 items allowed
+			r.Some(HasMinimumValue(100.0)), // At least one item must be worth $100 or more,
+		),
 		"shippingInfo": u.Schema{
 			"street":     u.Field(order.ShippingInfo.Street, r.NotZero, r.MinS(5)),
 			"city":       u.Field(order.ShippingInfo.City, r.NotZero, r.MinS(2)),
@@ -200,10 +205,10 @@ func main() {
 	}
 
 	// Create validator
-	uuu := u.NewSouuup(orderSchema)
+	s := u.NewSouuup(orderSchema)
 
 	// Validate order
-	err := uuu.Validate()
+	err := s.Validate()
 	if err != nil {
 		fmt.Printf("Order validation failed: %s\n", err)
 		return
@@ -215,7 +220,22 @@ func main() {
 	invalidShipDate := now.Add(-24 * time.Hour) // yesterday (invalid ship date)
 	invalidOrder := order
 	invalidOrder.ShipDate = &invalidShipDate
-	invalidOrder.Items[0].Quantity = 0          // Invalid quantity
+	invalidOrder.Items = []OrderItem{
+		{
+			ProductID:   "PROD-001",
+			Quantity:    2,
+			UnitPrice:   49.99,
+			Discount:    5.00,
+			Description: "Wireless Headphones",
+		},
+		{
+			ProductID:   "PROD-002",
+			Quantity:    1,
+			UnitPrice:   9.99, // Too cheap to satisfy the minimum value rule
+			Discount:    0.00,
+			Description: "Budget Earbuds",
+		},
+	}
 	invalidOrder.PaymentInfo.Method = "bitcoin" // Invalid payment method
 
 	// Create validation schema for invalid order
