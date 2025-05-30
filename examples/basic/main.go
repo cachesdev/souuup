@@ -71,10 +71,10 @@ func main() {
 	}
 
 	// Create validator
-	uuu := u.NewSouuup(schema)
+	s := u.NewSouuup(schema)
 
 	// Validate data
-	err := uuu.Validate()
+	err := s.Validate()
 	if err != nil {
 		fmt.Printf("Validation failed: %s\n", err)
 		return
