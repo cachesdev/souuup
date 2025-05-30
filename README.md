@@ -11,7 +11,7 @@ Souuup is a flexible validation framework that lets you easily validate complex 
 - 🔍 **Type-safe validation** - Uses generics for compile-time type checking
 - 🧩 **Composable rules** - Mix and match validation rules for your specific needs
 - 🌳 **Nested validation** - Validate complex, nested data structures
-- 🚦 **Detailed error reporting** - Get comprehensive error messages with the shame shape as your schema
+- 🚦 **Detailed error reporting** - Get comprehensive error messages with the same shape as your schema
 
 ## Quick Start
 
