@@ -2,6 +2,7 @@ package r
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/cachesdev/souuup/u"
@@ -171,6 +172,21 @@ func ExactLength[T any](n int) u.SliceRule[T] {
 		length := len(fs.Value)
 		if length != n {
 			return fmt.Errorf("length is %d, but needs to be exactly %d", length, n)
+		}
+		return nil
+	}
+}
+
+// Contains validates that a slice contains a matching element for comparable slices.
+//
+// Example:
+//
+//	// Validate that a team has a goalkeeper
+//	teamMembersField := u.Field(team.Members, r.Contains("GK"))
+func Contains[T comparable](member T) u.SliceRule[T] {
+	return func(fs u.FieldState[[]T]) error {
+		if !slices.Contains(fs.Value, member) {
+			return fmt.Errorf("%v does not contain %v, but needs to", fs.Value, member)
 		}
 		return nil
 	}

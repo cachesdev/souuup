@@ -83,13 +83,13 @@ func NotInS(set []string) u.StringRule {
 	}
 }
 
-// Contains validates if a string contains a substring
+// ContainsS validates if a string contains a substring
 //
 // Example:
 //
 //	// Validate that an address contains "Street"
-//	addrField := u.Field("123 London Street", r.Contains("Street"))
-func Contains(substr string) u.StringRule {
+//	addrField := u.Field("123 London Street", r.ContainsS("Street"))
+func ContainsS(substr string) u.StringRule {
 	return func(fs u.FieldState[string]) error {
 		if strings.Contains(fs.Value, substr) {
 			return fmt.Errorf("%q does not contain %q, but needs to", fs.Value, substr)
