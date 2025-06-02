@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cachesdev/souuup/internal/testutil"
 	"github.com/cachesdev/souuup/r"
 	"github.com/cachesdev/souuup/u"
 )
