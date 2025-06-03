@@ -91,10 +91,10 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		// Return validation errors as JSON
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"success": false,
 			"message": "Validation failed",
-			"errors":  err.(*u.ValidationError).ToMap(),
+			"errors":  err.Error(),
 		})
 		return
 	}
@@ -103,7 +103,7 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 	// (in a real app, this would save the user to a database)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "User registered successfully",
 	})

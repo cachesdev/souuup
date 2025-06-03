@@ -1,0 +1,74 @@
+version: "2"
+linters:
+    default: none
+    enable:
+        - asasalint
+        - bidichk
+        - bodyclose
+        - canonicalheader
+        - containedctx
+        - contextcheck
+        - decorder
+        - durationcheck
+        - errcheck
+        - errchkjson
+        - errname
+        - errorlint
+        - exhaustive
+        - exptostd
+        - fatcontext
+        - forcetypeassert
+        - gochecknoinits
+        - goconst
+        - goprintffuncname
+        - gosec
+        - govet
+        - inamedparam
+        - ineffassign
+        - makezero
+        - mirror
+        - nestif
+        - nilerr
+        - nilnesserr
+        - nilnil
+        - nonamedreturns
+        - perfsprint
+        - prealloc
+        - predeclared
+        - reassign
+        - recvcheck
+        - rowserrcheck
+        - sqlclosecheck
+        - staticcheck
+        - testableexamples
+        - thelper
+        - tparallel
+        - unconvert
+        - unparam
+        - unused
+        - usestdlibvars
+        - usetesting
+        - wastedassign
+    settings:
+    exclusions:
+        generated: lax
+        presets:
+            - comments
+            - common-false-positives
+            - legacy
+            - std-error-handling
+        rules:
+            - linters:
+                  - goconst
+              path: (.+)_test\.go
+        paths:
+            - third_party$
+            - builtin$
+            - examples$
+formatters:
+    exclusions:
+        generated: lax
+        paths:
+            - third_party$
+            - builtin$
+            - examples$

@@ -171,7 +171,7 @@ func TestValidationError_HasErrors(t *testing.T) {
 		// Arrange
 		ve := u.NewValidationError()
 		// Create nested ValidationError but don't add any errors to it
-		ve.GetOrCreateNested("address")
+		_ = ve.GetOrCreateNested("address")
 
 		// Act
 		hasErrors := ve.HasErrors()
